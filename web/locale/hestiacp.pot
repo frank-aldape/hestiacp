@@ -5101,3 +5101,72 @@ msgstr ""
 #: ../../bin/v-list-sys-services:336
 msgid "web terminal backend"
 msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Mail Security"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "This account is read-only."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "DNSBL management requires Exim."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Invalid DNSBL entry."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "These settings apply to all mail domains on this server. Domain-specific protection is managed from each mail domain's edit page."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Domain protection"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Manage spam filtering, spam rejection, antivirus, DKIM, certificates and sending limits for each domain."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "DNS blocklists (DNSBL)"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Exim checks these lists when receiving mail. Listed sending IP addresses may be rejected before domain spam filtering. Removing an entry removes that reputation check for all domains."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "No DNSBL entries are configured."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+#, php-format
+msgid "Remove DNSBL %s for all mail domains?"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "DNSBL entry"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Enter the provider's DNSBL zone, optionally followed by its existing != response-code exclusions. Saving a change reloads the mail service; if reload is unavailable, the service may restart."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Add DNSBL"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Advanced configuration"
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php ../../web/list/mail/security/index.php
+msgid "Use the existing service editors for global spam thresholds, sender exceptions and mail rules. Review changes before applying them."
+msgstr ""
+
+#: ../../web/templates/pages/list_mail_security.php
+msgid "Select the domain owner from Users to manage another user's mail domains."
+msgstr ""

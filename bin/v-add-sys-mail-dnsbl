@@ -48,7 +48,7 @@ if [ ! -f "$HESTIA/conf/dnsbl.conf" ]; then
 fi
 
 # Check for duplicate
-if grep -q -x "$host" "$HESTIA/conf/dnsbl.conf"; then
+if grep -Fqx -- "$host" "$HESTIA/conf/dnsbl.conf"; then
 	check_result "$E_EXISTS" "DNSBL $host already exists"
 fi
 
@@ -73,5 +73,6 @@ log_event "$OK" "$ARGUMENTS"
 
 # Restart exim
 $BIN/v-restart-service "$MAIL_SYSTEM" "$restart"
+check_result $? "DNSBL list saved, but mail service reload failed" "$E_RESTART"
 
 exit

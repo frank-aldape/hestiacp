@@ -1,0 +1,58 @@
+# Spanish translations for the mail security panel.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: es\n"
+
+msgid "Mail Security"
+msgstr "Seguridad del correo"
+
+msgid "This account is read-only."
+msgstr "Esta cuenta es de solo lectura."
+
+msgid "DNSBL management requires Exim."
+msgstr "La administración de DNSBL requiere Exim."
+
+msgid "Invalid DNSBL entry."
+msgstr "Entrada DNSBL no válida."
+
+msgid "These settings apply to all mail domains on this server. Domain-specific protection is managed from each mail domain's edit page."
+msgstr "Estos ajustes se aplican a todos los dominios de correo del servidor. La protección de cada dominio se administra desde su página de edición."
+
+msgid "Domain protection"
+msgstr "Protección por dominio"
+
+msgid "Manage spam filtering, spam rejection, antivirus, DKIM, certificates and sending limits for each domain."
+msgstr "Administra el filtro y rechazo de spam, antivirus, DKIM, certificados y límites de envío de cada dominio."
+
+msgid "DNS blocklists (DNSBL)"
+msgstr "Listas de bloqueo DNS (DNSBL)"
+
+msgid "Exim checks these lists when receiving mail. Listed sending IP addresses may be rejected before domain spam filtering. Removing an entry removes that reputation check for all domains."
+msgstr "Exim consulta estas listas al recibir correo. Las IP de envío incluidas pueden rechazarse antes del filtro antispam del dominio. Eliminar una entrada retira esa comprobación de reputación para todos los dominios."
+
+msgid "No DNSBL entries are configured."
+msgstr "No hay entradas DNSBL configuradas."
+
+#, php-format
+msgid "Remove DNSBL %s for all mail domains?"
+msgstr "¿Eliminar la DNSBL %s para todos los dominios de correo?"
+
+msgid "DNSBL entry"
+msgstr "Entrada DNSBL"
+
+msgid "Enter the provider's DNSBL zone, optionally followed by its existing != response-code exclusions. Saving a change reloads the mail service; if reload is unavailable, the service may restart."
+msgstr "Introduce la zona DNSBL del proveedor, opcionalmente seguida de las exclusiones de códigos de respuesta con !=. Guardar un cambio recarga el servicio de correo; si la recarga no está disponible, el servicio puede reiniciarse."
+
+msgid "Add DNSBL"
+msgstr "Añadir DNSBL"
+
+msgid "Advanced configuration"
+msgstr "Configuración avanzada"
+
+msgid "Use the existing service editors for global spam thresholds, sender exceptions and mail rules. Review changes before applying them."
+msgstr "Usa los editores de servicios existentes para los umbrales globales de spam, excepciones de remitentes y reglas de correo. Revisa los cambios antes de aplicarlos."
+
+#: ../../web/templates/pages/list_mail_security.php
+msgid "Select the domain owner from Users to manage another user's mail domains."
+msgstr "Selecciona al propietario del dominio en Usuarios para administrar sus dominios de correo."

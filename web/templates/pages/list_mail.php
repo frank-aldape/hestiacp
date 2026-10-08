@@ -11,6 +11,11 @@
 <div class="toolbar">
 	<div class="toolbar-inner">
 		<div class="toolbar-buttons">
+			<?php if ($_SESSION["userContext"] === "admin" && empty($_SESSION["look"])) { ?>
+				<a href="/list/mail/security/" class="button button-secondary">
+					<i class="fas fa-shield-halved icon-blue"></i><?= tohtml(_("Mail Security")) ?>
+				</a>
+			<?php } ?>
 			<?php if ($read_only !== true) { ?>
 				<a href="/add/mail/" class="button button-secondary js-button-create">
 					<i class="fas fa-circle-plus icon-green"></i><?= tohtml( _("Add Mail Domain")) ?>

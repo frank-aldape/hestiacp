@@ -370,6 +370,11 @@
 						<i class="fas fa-envelopes-bulk u-mr10"></i><?= tohtml( _("Mail Server")) ?>
 					</summary>
 					<div class="box-collapse-content">
+						<?php if (empty($_SESSION["look"])) { ?>
+							<a class="button button-secondary u-mb10" href="/list/mail/security/">
+								<i class="fas fa-shield-halved icon-blue"></i><?= tohtml(_("Mail Security")) ?>
+							</a>
+						<?php } ?>
 						<p>
 							<?= tohtml( _("Mail Server")) ?>:
 							<span class="u-ml5">
