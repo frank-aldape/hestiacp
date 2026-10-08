@@ -46,7 +46,7 @@ server {
 		rewrite ^/(.+)$ /index.php?_route_=$1 last;
 	}
 
-	location /system/storage/ {
+	location /storage/ {
 		deny all;
 		return 404;
 	}
