@@ -25,31 +25,12 @@ source_conf "$HESTIA/conf/hestia.conf"
 
 # JSON list function
 json_list() {
-	IFS=$'\n'
-	i=1
-	objects=$(grep ACCOUNT $USER_DATA/mail/$domain.conf | wc -l)
-	echo "{"
-	while read str; do
-		parse_object_kv_list "$str"
-		echo -n '    "'$ACCOUNT'": {
-        "ALIAS": "'$ALIAS'",
-        "FWD": "'$FWD'",
-        "FWD_ONLY": "'$FWD_ONLY'",
-        "AUTOREPLY": "'$AUTOREPLY'",
-        "QUOTA": "'$QUOTA'",
-        "U_DISK": "'$U_DISK'",
-        "SUSPENDED": "'$SUSPENDED'",
-        "TIME": "'$TIME'",
-        "DATE": "'$DATE'"
-    }'
-		if [ "$i" -lt "$objects" ]; then
-			echo ','
-		else
-			echo
-		fi
-		((i++))
-	done < <(cat $USER_DATA/mail/$domain.conf)
-	echo '}'
+	local result status
+	result=$("$HESTIA_PHP" "$HESTIA/func/list_mail_json.php" accounts "$USER_DATA/mail/$domain.conf" \
+		"$HESTIA_RESERVED_CONF_KEYS" "$HESTIA_OBJECT_KEY_EXCEPTIONS")
+	status=$?
+	check_result "$status" "Unable to list mail records" "$E_INVALID"
+	printf '%s\n' "$result"
 }
 
 # SHELL list function
