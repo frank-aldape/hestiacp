@@ -40,6 +40,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 			check_return_code($return_var, $output);
 			unset($output);
 		}
+	} elseif ($action === "forward-spam-policy") {
+		$scope = $_POST["forward_scope"] ?? "";
+		$domains = $_POST["forward_domains"] ?? "";
+		if (
+			!$v_dnsbl_supported ||
+			!$v_validity_supported ||
+			!is_string($scope) ||
+			!in_array($scope, ["off", "selected", "all"], true) ||
+			!is_string($domains) ||
+			strlen($domains) > 4096 ||
+			($scope === "selected" &&
+				!preg_match(
+					"/\\A(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]+(?:,(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z0-9-]+)*\\z/",
+					trim($domains),
+				))
+		) {
+			$_SESSION["error_msg"] = _("Invalid forwarding protection policy.");
+		} else {
+			$policy = $scope === "selected" ? strtolower(trim($domains)) : $scope;
+			exec(
+				HESTIA_CMD .
+					"v-change-sys-mail-security forward-spam-policy " .
+					quoteshellarg($policy),
+				$output,
+				$return_var,
+			);
+			check_return_code($return_var, $output);
+			unset($output);
+		}
 	} elseif ($action === "validity-disable") {
 		if (!$v_validity_supported) {
 			$_SESSION["error_msg"] = _("Validity management requires spamd.");
@@ -93,7 +122,22 @@ if ($v_dnsbl_supported || $v_validity_supported) {
 				true,
 			)
 		) {
-			$v_mail_settings = $settings;
+			$forwarding = $settings["forwarding"] ?? ["mode" => "unsupported", "domains" => []];
+			if (
+				!is_array($forwarding) ||
+				!in_array(
+					$forwarding["mode"] ?? "",
+					["off", "selected", "all", "unsupported"],
+					true,
+				) ||
+				!is_array($forwarding["domains"] ?? null) ||
+				array_filter($forwarding["domains"], static fn($domain) => !is_string($domain))
+			) {
+				$_SESSION["error_msg"] = _("Unable to read mail security settings.");
+			} else {
+				$settings["forwarding"] = $forwarding;
+				$v_mail_settings = $settings;
+			}
 		} else {
 			$_SESSION["error_msg"] = _("Unable to read mail security settings.");
 		}

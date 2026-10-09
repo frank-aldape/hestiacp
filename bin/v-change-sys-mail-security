@@ -1,6 +1,6 @@
 #!/bin/bash
 # info: change supported global mail security settings
-# options: notifications EMAIL | validity-disable
+# options: notifications EMAIL | validity-disable | forward-spam-policy off|all|DOMAINS
 source /etc/hestiacp/hestia.conf
 source "$HESTIA/func/main.sh"
 source_conf "$HESTIA/conf/hestia.conf"
@@ -19,6 +19,12 @@ case "$1" in
 	validity-disable)
 		if [ "$#" -ne 1 ] || [ "$ANTISPAM_SYSTEM" != spamd ]; then
 			check_result "$E_INVALID" "Validity management requires spamd"
+		fi
+		;;
+	forward-spam-policy)
+		if [ "$#" -ne 2 ] || [[ ! "$2" =~ ^[a-zA-Z0-9.,-]+$ ]] || \
+			[[ ! "$MAIL_SYSTEM" =~ ^exim4?$ ]] || [ "$ANTISPAM_SYSTEM" != spamd ]; then
+			check_result "$E_INVALID" "invalid forwarding policy or unsupported mail service"
 		fi
 		;;
 	*) check_result "$E_INVALID" "invalid mail security action" ;;

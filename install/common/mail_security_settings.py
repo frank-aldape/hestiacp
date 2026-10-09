@@ -11,16 +11,19 @@ import sys
 import tempfile
 
 from mail_security_config import render_router, redirect_include, VALIDITY
+from mail_forwarding_guard import forwarding_state, policy_domains, render_forwarding_guard, validate_condition
 
 
 class Settings:
     def __init__(self, active=Path('/etc/exim4/exim4.conf'),
                  template=Path('/etc/exim4/exim4.conf.template'),
                  validity=Path('/etc/mail/spamassassin/zz-validity-disabled.cf'),
-                 backups=Path('/root/hestia-mail-security'), run=None):
+                 backups=Path('/root/hestia-mail-security'), run=None,
+                 domains_root=Path('/etc/exim4/domains')):
         self.active, self.template, self.validity, self.backups = map(
             Path, (active, template, validity, backups))
         self.run = run or self.command
+        self.domains_root = Path(domains_root)
 
     @staticmethod
     def command(args):
@@ -70,7 +73,12 @@ class Settings:
             validity = self.validity_state()
         except OSError:
             validity = 'unsupported'
-        return {'notifications': notifications, 'validity': validity}
+        try:
+            redirect_include(self.active.read_text(), self.template, self.template)
+            forwarding = forwarding_state(self.template.read_text())
+        except (OSError, ValueError):
+            forwarding = {'mode': 'unsupported', 'domains': []}
+        return {'notifications': notifications, 'validity': validity, 'forwarding': forwarding}
 
     @staticmethod
     def replace(path, content, metadata=None):
@@ -100,6 +108,13 @@ class Settings:
             path = self.validity
             candidate = VALIDITY.read_bytes()
             service = ['systemctl', 'reload-or-restart', 'spamd']
+        elif action == 'forward-spam-policy':
+            mode, domains = policy_domains(recipient)
+            if any(not (self.domains_root / domain).is_dir() for domain in domains):
+                raise ValueError('Forwarding protection requires existing local mail domains')
+            path = self.template
+            candidate = render_forwarding_guard(path.read_text(), recipient).encode()
+            service = ['systemctl', 'reload', 'exim4']
         else:
             raise ValueError('Unknown mail security action')
         if path.is_symlink():
@@ -117,8 +132,9 @@ class Settings:
         (stage / 'manifest.json').write_text(json.dumps({
             'action': action, 'path': str(path), 'previous_exists': previous is not None,
         }, indent=2) + '\n')
-        active_before = self.active.read_bytes() if action == 'notifications' else None
-        if action == 'notifications':
+        exim_change = action in ('notifications', 'forward-spam-policy')
+        active_before = self.active.read_bytes() if exim_change else None
+        if exim_change:
             shutil.copy2(self.active, stage / 'active-before')
             wrapper = redirect_include(active_before.decode(), self.template, stage / 'candidate')
             (stage / 'config-candidate').write_text(wrapper)
@@ -126,12 +142,15 @@ class Settings:
             hostname = re.search(r'^primary_hostname = (\S+)$', output, re.M)
             if not hostname:
                 raise ValueError('Cannot determine the configured server hostname')
-            if recipient.lower().rsplit('@', 1)[1] == hostname[1].lower():
-                raise ValueError('Notification destination must not use the server hostname')
-            self.run(['exim4', '-C', str(stage / 'config-candidate'), '-bt', recipient])
-            for localpart in ('root', 'postmaster', 'mailer-daemon'):
-                self.run(['exim4', '-C', str(stage / 'config-candidate'), '-bt',
-                          localpart + '@' + hostname[1]])
+            if action == 'forward-spam-policy' and mode != 'off':
+                validate_condition(self.run, stage / 'config-candidate', stage)
+            if action == 'notifications':
+                if recipient.lower().rsplit('@', 1)[1] == hostname[1].lower():
+                    raise ValueError('Notification destination must not use the server hostname')
+                self.run(['exim4', '-C', str(stage / 'config-candidate'), '-bt', recipient])
+                for localpart in ('root', 'postmaster', 'mailer-daemon'):
+                    self.run(['exim4', '-C', str(stage / 'config-candidate'), '-bt',
+                              localpart + '@' + hostname[1]])
         else:
             self.run(['spamassassin', '--lint', '--cf=' + candidate.decode()])
         if (path.read_bytes() if path.exists() else None) != previous:
@@ -140,7 +159,7 @@ class Settings:
             raise ValueError('Exim configuration changed during validation; reload the page')
         self.replace(path, candidate, metadata)
         try:
-            self.run(['exim4', '-bP', 'primary_hostname'] if action == 'notifications'
+            self.run(['exim4', '-bP', 'primary_hostname'] if exim_change
                      else ['spamassassin', '--lint'])
             self.run(service)
         except Exception as error:
@@ -172,6 +191,8 @@ def main():
             settings.change(action, sys.argv[2])
         elif action == 'validity-disable' and len(sys.argv) == 2:
             settings.change(action)
+        elif action == 'forward-spam-policy' and len(sys.argv) == 3:
+            settings.change(action, sys.argv[2])
         else:
             raise ValueError('Invalid mail security arguments')
 

@@ -46,6 +46,31 @@
 					</form>
 				<?php } ?>
 			<?php } ?>
+			<?php if ($v_dnsbl_supported && $v_validity_supported) { ?>
+				<h2 class="u-text-H3 u-mb10"><?= tohtml(_("Spam forwarding protection")) ?></h2>
+				<p class="u-mb10"><?= tohtml(_("Keep messages classified as spam in the local Spam folder instead of forwarding them. Applies to existing mailboxes in domains with spam filtering enabled, including forwarding-only mailboxes.")) ?></p>
+				<p class="u-mb10"><?= tohtml(_("Uses Exim's scan score. Messages that were not scanned keep their existing routing. External-only aliases and catch-all addresses without a local mailbox are not covered.")) ?></p>
+				<?php if ($v_mail_settings["forwarding"]["mode"] === "unsupported") { ?>
+					<p class="u-mb20"><?= tohtml(_("The forwarding protection configuration requires manual review.")) ?></p>
+				<?php } elseif ($read_only === true) { ?>
+					<p class="u-mb20"><?= tohtml($v_mail_settings["forwarding"]["mode"] . ": " . implode(",", $v_mail_settings["forwarding"]["domains"])) ?></p>
+				<?php } else { ?>
+					<form method="post" action="/list/mail/security/" class="u-mb20">
+						<input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
+						<input type="hidden" name="action" value="forward-spam-policy">
+						<label for="forward-scope" class="form-label"><?= tohtml(_("Protection scope")) ?></label>
+						<select id="forward-scope" name="forward_scope" class="form-select u-mb10">
+							<?php foreach (["off" => _("Disabled"), "selected" => _("Selected mail domains"), "all" => _("All mail domains with spam filtering")] as $mode => $label) { ?>
+								<option value="<?= tohtml($mode) ?>" <?= $v_mail_settings["forwarding"]["mode"] === $mode ? "selected" : "" ?>><?= tohtml($label) ?></option>
+							<?php } ?>
+						</select>
+						<label for="forward-domains" class="form-label"><?= tohtml(_("Selected domains, separated by commas")) ?></label>
+						<input id="forward-domains" name="forward_domains" type="text" class="form-control u-mb10" maxlength="4096" value="<?= tohtml(implode(",", $v_mail_settings["forwarding"]["domains"])) ?>">
+						<p class="u-mb10"><?= tohtml(_("Review the Spam folder for false positives and disk usage. Saving validates Exim and reloads it; disabling restores the previous forwarding behavior.")) ?></p>
+						<button type="submit" class="button"><?= tohtml(_("Save")) ?></button>
+					</form>
+				<?php } ?>
+			<?php } ?>
 			<?php if ($v_validity_supported) { ?>
 				<h2 class="u-text-H3 u-mb10"><?= tohtml(_("Validity reputation checks")) ?></h2>
 				<p class="u-mb10"><?= tohtml(_("Disable six Validity rules that can misread DNS query-limit responses. Other spam checks and the configured threshold are preserved.")) ?></p>

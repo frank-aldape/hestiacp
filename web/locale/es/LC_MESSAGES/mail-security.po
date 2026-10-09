@@ -107,3 +107,33 @@ msgstr "Aplicar corrección de Validity"
 
 msgid "The Validity override is custom or unreadable. Review it in Advanced configuration; it will not be overwritten here."
 msgstr "Las reglas de Validity están personalizadas o no se pueden leer. Revísalas en Configuración avanzada; esta pantalla no las sobrescribirá."
+
+msgid "Invalid forwarding protection policy."
+msgstr "La política de protección de reenvíos no es válida."
+
+msgid "Spam forwarding protection"
+msgstr "Protección contra el reenvío de spam"
+
+msgid "Keep messages classified as spam in the local Spam folder instead of forwarding them. Applies to existing mailboxes in domains with spam filtering enabled, including forwarding-only mailboxes."
+msgstr "Conserva los mensajes clasificados como spam en la carpeta Spam local en lugar de reenviarlos. Se aplica a buzones existentes en dominios con filtro antispam, incluidos los buzones configurados solo para reenviar."
+
+msgid "Uses Exim's scan score. Messages that were not scanned keep their existing routing. External-only aliases and catch-all addresses without a local mailbox are not covered."
+msgstr "Utiliza la puntuación calculada por Exim. Los mensajes no analizados conservan su enrutamiento actual. No incluye alias exclusivamente externos ni direcciones catch-all sin buzón local."
+
+msgid "The forwarding protection configuration requires manual review."
+msgstr "La configuración de protección de reenvíos requiere revisión manual."
+
+msgid "Protection scope"
+msgstr "Alcance de la protección"
+
+msgid "Selected mail domains"
+msgstr "Dominios de correo seleccionados"
+
+msgid "All mail domains with spam filtering"
+msgstr "Todos los dominios con filtro antispam"
+
+msgid "Selected domains, separated by commas"
+msgstr "Dominios seleccionados, separados por comas"
+
+msgid "Review the Spam folder for false positives and disk usage. Saving validates Exim and reloads it; disabling restores the previous forwarding behavior."
+msgstr "Revisa la carpeta Spam para detectar falsos positivos y controlar el espacio utilizado. Al guardar se valida y recarga Exim; al desactivar se restablece el comportamiento anterior de los reenvíos."

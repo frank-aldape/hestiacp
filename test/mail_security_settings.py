@@ -10,6 +10,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'install/common'))
 from mail_security_settings import Settings
 from mail_security_config import render_router, VALIDITY
+from unittest.mock import patch
 
 TEMPLATE = '''CUSTOM_MACRO = retained
 begin routers
@@ -48,10 +49,50 @@ class SettingsTests(unittest.TestCase):
             return 'primary_hostname = srv.example.org\n'
         return 'new@example.org\n'
 
+    def prepare_forwarding(self):
+        self.template.write_text(self.template.read_text().replace('begin transports', 'aliases:\n  driver = redirect\n  unseen\nbegin transports') + 'local_spam_delivery:\n  driver = appendfile\n')
+        self.settings.domains_root = self.root / 'domains'
+        (self.settings.domains_root / 'example.org').mkdir(parents=True)
+
+    def test_selected_forwarding_policy_is_transactional_and_reversible(self):
+        self.prepare_forwarding()
+        previous = self.template.read_bytes()
+        with patch('mail_security_settings.validate_condition') as validation:
+            self.settings.change('forward-spam-policy', 'example.org')
+            validation.assert_called_once()
+        self.assertEqual(self.settings.read()['forwarding'], {'mode': 'selected', 'domains': ['example.org']})
+        self.assertEqual(self.commands[-1], ['systemctl', 'reload', 'exim4'])
+        self.settings.change('forward-spam-policy', 'off')
+        self.assertEqual(self.template.read_bytes(), previous)
+
+    def test_failed_forwarding_expansion_never_changes_live_config(self):
+        self.prepare_forwarding()
+        previous = self.template.read_bytes()
+        with patch('mail_security_settings.validate_condition', side_effect=ValueError('expression invalid')):
+            with self.assertRaisesRegex(ValueError, 'expression invalid'):
+                self.settings.change('forward-spam-policy', 'all')
+        self.assertEqual(self.template.read_bytes(), previous)
+        self.assertFalse(any(cmd[0] == 'systemctl' for cmd in self.commands))
+
+    def test_forwarding_reload_failure_restores_previous_policy(self):
+        self.prepare_forwarding()
+        previous = self.template.read_bytes()
+        self.fail_reload = 1
+        with patch('mail_security_settings.validate_condition'):
+            with self.assertRaisesRegex(ValueError, 'previous configuration restored'):
+                self.settings.change('forward-spam-policy', 'all')
+        self.assertEqual(self.template.read_bytes(), previous)
+
+    def test_missing_local_domain_is_rejected(self):
+        self.prepare_forwarding()
+        with self.assertRaisesRegex(ValueError, 'existing local mail domains'):
+            self.settings.change('forward-spam-policy', 'missing.org')
+        self.assertFalse(self.commands)
+
     def test_reads_installed_values_without_invoking_services(self):
         self.assertEqual(self.settings.read(), {
             'notifications': {'state': 'configured', 'recipient': 'ops@example.org'},
-            'validity': 'disabled'})
+            'validity': 'disabled', 'forwarding': {'mode': 'off', 'domains': []}})
         self.assertEqual(self.commands, [])
 
     def test_notification_change_preserves_other_configuration_and_permissions(self):
@@ -178,6 +219,16 @@ python3() { printf '%s\\n' "$*" > "$HESTIA/invocation"; return "$FAILURE"; }
                        E_INVALID='2', OK='0', ARGUMENTS='test')
             result = subprocess.run(['bash', str(script), *args], env=env, capture_output=True, text=True)
             return result, (root / 'invocation').exists(), (root / 'audit').exists()
+
+    def test_forwarding_policy_cli_is_audited_and_requires_antispam(self):
+        result, invoked, audited = self.invoke(['forward-spam-policy', 'example.org'])
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(invoked and audited)
+        for args, spam in [(['forward-spam-policy', 'all'], ''),
+                           (['forward-spam-policy', 'example.org;id'], 'spamd')]:
+            result, invoked, audited = self.invoke(args, spam=spam)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(invoked or audited)
 
     def test_successful_change_is_audited(self):
         result, invoked, audited = self.invoke(['notifications', 'ops@example.org'])

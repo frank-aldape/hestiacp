@@ -1,0 +1,9 @@
+# BEGIN HESTIA SPAM FORWARDING GUARD
+.ifdef SPAMASSASSIN
+hestia_spam_forward_guard:
+  driver = accept
+  domains = @DOMAINS@
+  transport = local_spam_delivery
+  condition = ${if eq{$acl_m2}{}{no}{${if >{$acl_m2}{SPAM_SCORE}{${if exists{/etc/exim4/domains/${lookup{$domain}dsearch{/etc/exim4/domains/}}/antispam}{${lookup{$local_part}lsearch{/etc/exim4/domains/${lookup{$domain}dsearch{/etc/exim4/domains/}}/passwd}{yes}{no}}}{no}}}{no}}}}
+.endif
+# END HESTIA SPAM FORWARDING GUARD

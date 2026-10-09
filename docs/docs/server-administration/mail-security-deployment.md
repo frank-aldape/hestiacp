@@ -151,3 +151,23 @@ The original lockfile reproduced 14 npm audit findings: 9 high, 2 moderate and 3
 `source-map-js` was the one original finding remaining with `--omit=dev`; it is updated from 1.2.1 to 1.2.2, the [patched version](https://github.com/advisories/GHSA-68fv-2mgg-jv7q). Other resolved findings include `undici`, `brace-expansion`, `js-yaml`, `markdown-it`, `smol-toml` and `katex`. The overrides are tested with the actual Markdown math renderer and TOML parser, and the full panel JS/CSS build passes. Node packages and scripts were installed only in a temporary verification checkout while evaluating the changes.
 
 `braces` 3.0.3 is still the latest published version at audit time and remains [affected](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). npm proposes a downgrade of `markdownlint-cli2` across its declared version range; this was not applied. Avoid running those development tools on untrusted input and review the upstream patch when available. The dependency correction is source-only until the next package is built and installed; it does not modify the VPS's installed fork5 package.
+
+## Selective spam forwarding protection
+
+After installing the updated package, an administrator can use **Mail → Mail Security → Spam forwarding protection** (`/list/mail/security/`). Choose disabled (the default), selected domains separated by commas, or all local mail domains with spam filtering enabled. A new managed router is inserted immediately before `aliases`; existing relay, SRS, alias and transport directives are retained. Package installation alone does not activate the policy.
+
+The guard uses Exim's persisted `$acl_m2` scan score and the existing `SPAM_SCORE` threshold, rather than trusting a sender-supplied `X-Spam-Status` header. Only a score strictly above the threshold, an enabled domain antispam marker and an existing local mailbox trigger delivery to its Spam folder before forwarding is generated. Ordinary or unscanned messages keep their routing. The existing scan size limit, authenticated-mail exemptions and reject policy remain in effect. This does not increase SMTP line-length limits or retry/delete queued mail.
+
+Forwarding-only accounts also retain a local Spam copy when this guard applies. Monitor that folder for false positives and disk/quota usage. Pure external aliases and catch-all addresses without a real local mailbox are outside this policy; it does not promise to block every possible spam forwarding path. Existing vacation replies preceding `aliases` retain their current behavior. Review these separate cases before expanding coverage.
+
+Every change uses the existing locked, backed-up configuration transaction, validates the candidate, and reloads Exim. Failure restores the prior file. Disabling removes only the managed guard and restores previous forwarding behavior; manually edited or unrecognized guards are refused. Administrators in impersonation mode, non-admin users and read-only sessions cannot change this policy.
+
+Before building/deploying, run the following **on the VPS as root**, from the updated source checkout:
+
+```bash
+python3 test/mail_forwarding_guard_exim.py
+```
+
+This parses a temporary candidate including the real site wrapper and invokes [Exim's expansion test mode](https://www.exim.org/exim-html-current/doc/html/spec_html/ch-the_exim_command_line.html) against private fixture files. It checks absent scan score, scores below/at/above the threshold, a nonexistent mailbox and a disabled antispam flag. It sends no messages, changes no active configuration and does not replace an end-to-end SMTP test. The same checks run before enabling or changing a policy through the web UI. Local Python transaction tests stub Exim; they do not count as this VPS validation.
+
+Start with one domain such as `meetlogistic.com`, then verify that legitimate forwarding still arrives and that a classified spam test remains only in the local Spam folder. A direct `spamc` GTUBE test validates the scanner but cannot verify the routing guard. Old frozen bounces are not removed by this policy.

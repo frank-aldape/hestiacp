@@ -27,6 +27,7 @@ class MailSecurityTests(unittest.TestCase):
             "settings": settings if settings is not None else {
                 "notifications": {"state": "configured", "recipient": "ops@example.org"},
                 "validity": "disabled",
+                "forwarding": {"mode": "off", "domains": []},
             },
         }
         script = r'''<?php
@@ -90,6 +91,31 @@ namespace MailSecurityTest {
         self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
         self.assertEqual(completed.stderr, "", completed.stderr)
         return json.loads(completed.stdout)
+
+    def test_forwarding_scope_submission_is_quoted_and_redirected(self):
+        for scope, domains, policy in [('off', '', 'off'), ('all', '', 'all'),
+                                       ('selected', 'Example.org,other.org', 'example.org,other.org')]:
+            result = self.request(post={'token': 'valid-token', 'action': 'forward-spam-policy',
+                                        'forward_scope': scope, 'forward_domains': domains})
+            self.assertEqual(result['commands'], ["hestia v-change-sys-mail-security forward-spam-policy '" + policy + "'"])
+            self.assertEqual(result['headers'], ['Location: /list/mail/security/'])
+
+    def test_invalid_forwarding_scope_never_mutates(self):
+        for scope, domains in [('selected', ''), ('selected', 'all'), ('selected', 'off'), ('selected', 'a.org;id'),
+                               ('selected', ['a.org']), (['all'], ''), ('unknown', ''),
+                               ('selected', 'a.org\nother.org')]:
+            result = self.request(post={'token': 'valid-token', 'action': 'forward-spam-policy',
+                                        'forward_scope': scope, 'forward_domains': domains})
+            self.assertFalse(any('v-change-' in cmd for cmd in result['commands']))
+            self.assertEqual(result['error'], 'Invalid forwarding protection policy.')
+
+    def test_forwarding_write_requires_csrf_and_writable_admin(self):
+        for options in ({'role': 'user'}, {'look': 'customer'}, {'readonly': True}):
+            result = self.request(post={'token': 'valid-token', 'action': 'forward-spam-policy',
+                                        'forward_scope': 'all'}, **options)
+            self.assertFalse(any('v-change-' in cmd for cmd in result['commands']))
+        result = self.request(post={'token': 'wrong', 'action': 'forward-spam-policy', 'forward_scope': 'all'})
+        self.assertEqual(result['commands'], [])
 
     def test_users_and_impersonated_sessions_cannot_read_global_settings(self):
         for kwargs in ({"role": "user"}, {"look": "customer"}):
