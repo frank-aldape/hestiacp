@@ -89,6 +89,11 @@ class SettingsTests(unittest.TestCase):
             self.settings.change('forward-spam-policy', 'missing.org')
         self.assertFalse(self.commands)
 
+    def test_command_passes_long_expansions_through_standard_input(self):
+        expression = 'x' * 403 + '\n'
+        output = Settings.command([sys.executable, '-c', 'import sys; print(sys.stdin.read(), end="")'], input_text=expression)
+        self.assertEqual(output, expression)
+
     def test_reads_installed_values_without_invoking_services(self):
         self.assertEqual(self.settings.read(), {
             'notifications': {'state': 'configured', 'recipient': 'ops@example.org'},

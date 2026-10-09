@@ -5,7 +5,7 @@ import tempfile
 import unittest
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'install/common'))
-from mail_forwarding_guard import policy_domains, render_forwarding_guard, forwarding_state, validate_condition, ASSET
+from mail_forwarding_guard import policy_domains, render_forwarding_guard, forwarding_state, validate_condition, ASSET, expansion_result
 
 TEMPLATE = '''begin routers
 site_relay:
@@ -63,8 +63,12 @@ class ForwardingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             calls = []
             results = iter(['50', 'no', 'no', 'no', 'yes', 'no', 'no'])
-            def engine(args):
-                calls.append(args)
+            def engine(args, input_text=None):
+                if input_text is not None:
+                    self.assertEqual(args[-1], '-be')
+                    self.assertTrue(input_text.endswith('\n'))
+                    self.assertGreater(len(input_text), 256)
+                calls.append(args + ([input_text.strip()] if input_text is not None else []))
                 if len(calls) == 7:
                     self.assertFalse((Path(directory) / 'guard-fixture/fixture.example.org/antispam').exists())
                 return next(results)
@@ -74,10 +78,17 @@ class ForwardingTests(unittest.TestCase):
             self.assertTrue(all('$acl_m2' not in call[-1] for call in calls))
             self.assertTrue(all('/etc/exim4/domains/' not in call[-1] for call in calls))
 
+    def test_interactive_expansion_prompts_are_parsed_without_hiding_errors(self):
+        self.assertEqual(expansion_result('> no\n> '), 'no')
+        self.assertEqual(expansion_result('yes\n'), 'yes')
+        for output in ('> Failed to expand string: syntax error\n> ', '> yes\nno\n>', ''):
+            with self.assertRaises(ValueError):
+                expansion_result(output)
+
     def test_expansion_validation_is_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             calls = []
-            def bad_engine(args):
+            def bad_engine(args, input_text=None):
                 calls.append(args)
                 return '50' if args[-1] == 'SPAM_SCORE' else 'yes'
             with self.assertRaisesRegex(ValueError, 'expansion check failed'):

@@ -11,11 +11,11 @@ from mail_forwarding_guard import render_forwarding_guard, validate_condition
 from mail_security_config import redirect_include
 from mail_security_settings import Settings
 
-def diagnostic_command(args):
+def diagnostic_command(args, input_text=None):
     # Only the dedicated root-only preview exposes controlled expansion diagnostics.
     # The production web helper keeps service output private.
-    result = subprocess.run(args, capture_output=True, text=True, timeout=60)
-    if result.returncode:
+    result = subprocess.run(args, input=input_text, capture_output=True, text=True, timeout=60)
+    if result.returncode or ('-be' in args and 'Failed to expand' in result.stdout):
         if '-be' in args:
             detail = (result.stdout + result.stderr).strip()[:2000]
             raise ValueError('Exim expansion error: ' + detail)

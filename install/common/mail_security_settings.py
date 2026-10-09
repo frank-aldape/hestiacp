@@ -26,8 +26,8 @@ class Settings:
         self.domains_root = Path(domains_root)
 
     @staticmethod
-    def command(args):
-        result = subprocess.run(args, capture_output=True, text=True, timeout=60)
+    def command(args, input_text=None):
+        result = subprocess.run(args, input=input_text, capture_output=True, text=True, timeout=60)
         if result.returncode:
             # Do not expose service output, which may contain configuration secrets.
             raise ValueError('Mail configuration validation or service reload failed')

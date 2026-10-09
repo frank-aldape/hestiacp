@@ -66,6 +66,20 @@ def render_forwarding_guard(template, policy):
     return re.sub(r'^aliases:', lambda m: block(mode, domains) + m.group(), template, count=1, flags=re.M)
 
 
+def expansion_result(output):
+    # Interactive -be can emit a prompt before each result and one at EOF.
+    lines = []
+    for line in output.splitlines():
+        value = line.strip()
+        if value.startswith('>'):
+            value = value[1:].strip()
+        if value:
+            lines.append(value)
+    if len(lines) != 1 or lines[0] not in ('yes', 'no'):
+        raise ValueError('Exim returned an unexpected expansion test result')
+    return lines[0]
+
+
 def validate_condition(run, config, stage):
     """Exercise Exim's expansion engine with private fixtures, without sending mail."""
     prefix = ['exim4', '-C', str(config), '-be']
@@ -88,7 +102,10 @@ def validate_condition(run, config, stage):
         test = expression.replace('$acl_m2', str(score)).replace('{mailbox}', '{' + account + '}')
         case = 'score=' + repr(score) + ', mailbox=' + account + ', expected=' + expected
         try:
-            result = run(prefix + [test]).strip()
+            # Long argv expressions hit Exim's recipient argument length check.
+            # Feed the expansion through -be's standard input instead.
+            output = run(prefix, input_text=test + '\n')
+            result = expansion_result(output)
         except ValueError as error:
             raise ValueError('Exim forwarding protection check failed (' + case + '): ' + str(error)) from error
         if result != expected:
