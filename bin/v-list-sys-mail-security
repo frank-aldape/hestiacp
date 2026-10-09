@@ -1,0 +1,12 @@
+#!/bin/bash
+# info: list supported global mail security settings
+# options: [json]
+source /etc/hestiacp/hestia.conf
+source "$HESTIA/func/main.sh"
+source_conf "$HESTIA/conf/hestia.conf"
+
+if [ "$#" -gt 1 ] || [ "${1:-json}" != json ]; then
+	check_result "$E_INVALID" "only json output is supported"
+fi
+python3 "$HESTIA/install/common/mail_security_settings.py" read
+check_result $? "failed to read mail security settings"

@@ -1,0 +1,32 @@
+#!/bin/bash
+# info: change supported global mail security settings
+# options: notifications EMAIL | validity-disable
+source /etc/hestiacp/hestia.conf
+source "$HESTIA/func/main.sh"
+source_conf "$HESTIA/conf/hestia.conf"
+check_hestia_demo_mode
+
+case "$1" in
+	notifications)
+		check_args '2' "$#" 'notifications EMAIL'
+		if [ "$#" -ne 2 ] || [[ ! "$2" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$ ]]; then
+			check_result "$E_INVALID" "invalid notification email"
+		fi
+		if [[ ! "$MAIL_SYSTEM" =~ ^exim4?$ ]]; then
+			check_result "$E_INVALID" "notification management requires Exim"
+		fi
+		;;
+	validity-disable)
+		if [ "$#" -ne 1 ] || [ "$ANTISPAM_SYSTEM" != spamd ]; then
+			check_result "$E_INVALID" "Validity management requires spamd"
+		fi
+		;;
+	*) check_result "$E_INVALID" "invalid mail security action" ;;
+esac
+
+mensaje=$(python3 "$HESTIA/install/common/mail_security_settings.py" "$@" 2>&1)
+resultado=$?
+check_result "$resultado" "${mensaje:-mail security change failed}"
+"$BIN/v-log-action" "system" "Info" "Mail" "Mail security settings saved (Action: $1, Value: ${2:-disabled})."
+check_result $? "configuration saved, but action logging failed"
+log_event "$OK" "$ARGUMENTS"

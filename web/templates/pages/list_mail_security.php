@@ -27,6 +27,46 @@
 		</a>
 		<p class="u-mb20"><?= tohtml(_("Select the domain owner from Users to manage another user's mail domains.")) ?></p>
 
+		<?php if ($v_mail_settings !== null) { ?>
+			<?php if ($v_dnsbl_supported) { ?>
+				<h2 class="u-text-H3 u-mb10"><?= tohtml(_("Server notifications")) ?></h2>
+				<p class="u-mb10"><?= tohtml(_("Redirect root, postmaster and mailer-daemon at the server hostname to a monitored mailbox. Company mailboxes and forwarding rules are unchanged.")) ?></p>
+				<?php if ($v_mail_settings["notifications"]["state"] === "unsupported") { ?>
+					<p class="u-mb20"><?= tohtml(_("The Exim configuration has an unsupported layout or custom notification rules. Review it in Advanced configuration.")) ?></p>
+				<?php } elseif ($read_only === true) { ?>
+					<p class="u-mb20"><?= tohtml($v_mail_settings["notifications"]["recipient"] ?: _("No notification destination configured.")) ?></p>
+				<?php } else { ?>
+					<form method="post" action="/list/mail/security/" class="u-mb20">
+						<input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
+						<input type="hidden" name="action" value="notifications">
+						<label for="notification-email" class="form-label"><?= tohtml(_("Notification destination")) ?></label>
+						<input id="notification-email" class="form-control u-mb10" name="notification_email" type="email" required value="<?= tohtml($v_mail_settings["notifications"]["recipient"]) ?>">
+						<p class="u-mb10"><?= tohtml(_("Use an existing mailbox outside the server hostname. Saving validates routing and reloads Exim. A backup is retained and failed changes are restored.")) ?></p>
+						<button type="submit" class="button"><?= tohtml(_("Save")) ?></button>
+					</form>
+				<?php } ?>
+			<?php } ?>
+			<?php if ($v_validity_supported) { ?>
+				<h2 class="u-text-H3 u-mb10"><?= tohtml(_("Validity reputation checks")) ?></h2>
+				<p class="u-mb10"><?= tohtml(_("Disable six Validity rules that can misread DNS query-limit responses. Other spam checks and the configured threshold are preserved.")) ?></p>
+				<?php if ($v_mail_settings["validity"] === "disabled") { ?>
+					<p class="u-mb20"><?= tohtml(_("The Validity correction file is installed with all six scores set to zero.")) ?></p>
+				<?php } elseif ($v_mail_settings["validity"] === "missing") { ?>
+					<p class="u-mb10"><?= tohtml(_("The Validity correction file is not installed.")) ?></p>
+					<?php if ($read_only !== true) { ?>
+						<form method="post" action="/list/mail/security/" class="u-mb20">
+							<input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
+							<input type="hidden" name="action" value="validity-disable">
+							<p class="u-mb10"><?= tohtml(_("Applying validates SpamAssassin and reloads spamd, or restarts it if reload is unavailable. Failed changes are restored.")) ?></p>
+							<button type="submit" class="button"><?= tohtml(_("Apply Validity correction")) ?></button>
+						</form>
+					<?php } ?>
+				<?php } else { ?>
+					<p class="u-mb20"><?= tohtml(_("The Validity override is custom or unreadable. Review it in Advanced configuration; it will not be overwritten here.")) ?></p>
+				<?php } ?>
+			<?php } ?>
+		<?php } ?>
+
 		<h2 class="u-text-H3 u-mb10"><?= tohtml(_("DNS blocklists (DNSBL)")) ?></h2>
 		<p class="u-mb20"><?= tohtml(_("Exim checks these lists when receiving mail. Listed sending IP addresses may be rejected before domain spam filtering. Removing an entry removes that reputation check for all domains.")) ?></p>
 		<?php if (!$v_dnsbl_supported) { ?>

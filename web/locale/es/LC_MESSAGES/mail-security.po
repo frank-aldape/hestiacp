@@ -3,6 +3,9 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "Mail Security"
 msgstr "Seguridad del correo"
@@ -56,3 +59,51 @@ msgstr "Usa los editores de servicios existentes para los umbrales globales de s
 #: ../../web/templates/pages/list_mail_security.php
 msgid "Select the domain owner from Users to manage another user's mail domains."
 msgstr "Selecciona al propietario del dominio en Usuarios para administrar sus dominios de correo."
+
+msgid "Invalid notification email or unsupported mail service."
+msgstr "Correo de notificaciones no válido o servicio de correo no compatible."
+
+msgid "Validity management requires spamd."
+msgstr "La administración de Validity requiere spamd."
+
+msgid "Unable to read mail security settings."
+msgstr "No se pudo leer la configuración de seguridad del correo."
+
+msgid "Server notifications"
+msgstr "Notificaciones del servidor"
+
+msgid "Redirect root, postmaster and mailer-daemon at the server hostname to a monitored mailbox. Company mailboxes and forwarding rules are unchanged."
+msgstr "Redirige root, postmaster y mailer-daemon del nombre del servidor a un buzón supervisado. Se conservan los buzones y reenvíos de las empresas."
+
+msgid "The Exim configuration has an unsupported layout or custom notification rules. Review it in Advanced configuration."
+msgstr "La configuración de Exim tiene una estructura no compatible o reglas de notificaciones personalizadas. Revísala en Configuración avanzada."
+
+msgid "No notification destination configured."
+msgstr "No hay un destinatario de notificaciones configurado."
+
+msgid "Notification destination"
+msgstr "Destinatario de notificaciones"
+
+msgid "Use an existing mailbox outside the server hostname. Saving validates routing and reloads Exim. A backup is retained and failed changes are restored."
+msgstr "Usa un buzón existente fuera del nombre del servidor. Al guardar se valida el enrutamiento y se recarga Exim. Se conserva un respaldo y se revierten los cambios fallidos."
+
+msgid "Validity reputation checks"
+msgstr "Comprobaciones de reputación de Validity"
+
+msgid "Disable six Validity rules that can misread DNS query-limit responses. Other spam checks and the configured threshold are preserved."
+msgstr "Desactiva seis reglas de Validity que pueden interpretar incorrectamente las respuestas de límite de consultas DNS. Se conservan las demás comprobaciones y el umbral de spam."
+
+msgid "The Validity correction file is installed with all six scores set to zero."
+msgstr "El archivo de corrección de Validity está instalado con las seis puntuaciones en cero."
+
+msgid "The Validity correction file is not installed."
+msgstr "El archivo de corrección de Validity no está instalado."
+
+msgid "Applying validates SpamAssassin and reloads spamd, or restarts it if reload is unavailable. Failed changes are restored."
+msgstr "Al aplicar se valida SpamAssassin y se recarga spamd, o se reinicia si no admite recarga. Se revierten los cambios fallidos."
+
+msgid "Apply Validity correction"
+msgstr "Aplicar corrección de Validity"
+
+msgid "The Validity override is custom or unreadable. Review it in Advanced configuration; it will not be overwritten here."
+msgstr "Las reglas de Validity están personalizadas o no se pueden leer. Revísalas en Configuración avanzada; esta pantalla no las sobrescribirá."

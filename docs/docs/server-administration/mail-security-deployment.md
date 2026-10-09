@@ -11,6 +11,18 @@ Validity's original query-limit response could trigger both negative reputation 
 
 ## Prepare on an existing VPS
 
+### Administration from the panel
+
+After installing a package containing the web settings commands, sign in as an administrator (without impersonating another user), then open **Mail → Mail Security**, or `/list/mail/security/`. The page reads the existing site configuration; it does not require an administrator-owned mail domain.
+
+**Server notifications** displays the existing destination and allows it to be changed. Saving redirects only the three system addresses at Exim's primary hostname. It preserves other routers, relays and SRS macros, validates the candidate and its routing, and reloads Exim. Destinations at the server hostname are rejected to avoid a notification loop. Routing validation does not prove remote mailbox acceptance; check an actual notification after changing the destination.
+
+**Validity reputation checks** reports whether the local correction file contains the six zero scores. If it is missing, an administrator can apply the correction. This validates SpamAssassin and reloads/restarts `spamd`. It does not provide a toggle to enable unlicensed reputation checks. Custom override files and custom notification routers require review in the existing advanced editors and are never overwritten by these controls. File status does not prove that another SpamAssassin configuration file has not overridden those scores; an incoming message report remains the end-to-end verification.
+
+The privileged commands are `v-list-sys-mail-security json`, `v-change-sys-mail-security notifications EMAIL` and `v-change-sys-mail-security validity-disable`. Live paths are fixed, updates are serialized by a lock, and changes are validated before atomic replacement. Configuration/reload failures restore the prior file; a failed recovery is reported as an error. Backups and a change manifest are retained in `/root/hestia-mail-security/change-*`. Successful changes are written to Hestia's action log; failures are written to its event log. Read-only and impersonated sessions cannot apply changes.
+
+### Preparation outside the panel
+
 Run as root from the fork checkout. Set `DESTINO` to an existing monitored mailbox on a different domain from the server hostname. Do not use an address that forwards back to the server's system addresses.
 
 ```bash

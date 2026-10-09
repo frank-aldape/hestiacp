@@ -16,7 +16,7 @@ TEMPLATE = ROOT / "web/templates/pages/list_mail_security.php"
 
 class MailSecurityTests(unittest.TestCase):
     def request(self, post=None, role="admin", readonly=False, look="", service="exim4",
-                hosts=None, failure=False):
+                hosts=None, failure=False, settings=None):
         source = CONTROLLER.read_text().removeprefix("<?php")
         source = source.replace('include $_SERVER["DOCUMENT_ROOT"] . "/inc/main.php";', "")
         source = source.replace("exit();", "throw new \\MailSecurityRouteExit();")
@@ -24,6 +24,10 @@ class MailSecurityTests(unittest.TestCase):
             "post": post or {}, "role": role, "readonly": readonly, "look": look,
             "service": service, "hosts": hosts if hosts is not None else ["dnsbl.example.net"],
             "failure": failure, "template": str(TEMPLATE),
+            "settings": settings if settings is not None else {
+                "notifications": {"state": "configured", "recipient": "ops@example.org"},
+                "validity": "disabled",
+            },
         }
         script = r'''<?php
 namespace {
@@ -46,7 +50,9 @@ namespace MailSecurityTest {
     function exec($command, &$output, &$status) {
         $GLOBALS["result"]["commands"][] = $command;
         $status = $GLOBALS["fixture"]["failure"] ? 1 : 0;
-        $output = str_contains($command, "v-list-") ? $GLOBALS["fixture"]["hosts"] : [];
+        $output = str_contains($command, "v-list-sys-mail-security")
+            ? [json_encode($GLOBALS["fixture"]["settings"])]
+            : (str_contains($command, "v-list-") ? $GLOBALS["fixture"]["hosts"] : []);
         return "";
     }
     function check_return_code($status, $output) {
@@ -95,7 +101,7 @@ namespace MailSecurityTest {
     def test_readonly_cannot_write_and_has_no_forms_or_editor_links(self):
         result = self.request(post={"token": "valid-token", "action": "delete", "host": "dnsbl.example.net"}, readonly=True)
         self.assertTrue(result["csrf"])
-        self.assertEqual(result["commands"], ["hestia v-list-sys-mail-dnsbl plain"])
+        self.assertEqual(result["commands"], ["hestia v-list-sys-mail-security json", "hestia v-list-sys-mail-dnsbl plain"])
         self.assertNotIn("<form", result["html"])
         self.assertNotIn("/edit/server/", result["html"])
 
@@ -110,7 +116,7 @@ namespace MailSecurityTest {
                              ("zone", "restart"), ("zone!=127.0.0.1;id", "add")]:
             with self.subTest(host=host, action=action):
                 result = self.request(post={"token": "valid-token", "action": action, "host": host})
-                self.assertEqual(result["commands"], ["hestia v-list-sys-mail-dnsbl plain"])
+                self.assertEqual(result["commands"], ["hestia v-list-sys-mail-security json", "hestia v-list-sys-mail-dnsbl plain"])
                 self.assertEqual(result["error"], "Invalid DNSBL entry.")
 
     def test_existing_response_exclusions_are_preserved_and_post_redirects(self):
@@ -133,7 +139,7 @@ namespace MailSecurityTest {
 
     def test_unsupported_mail_service_cannot_mutate_dnsbl(self):
         result = self.request(post={"token": "valid-token", "action": "add", "host": "zone.example"}, service="remote")
-        self.assertEqual(result["commands"], [])
+        self.assertEqual(result["commands"], ["hestia v-list-sys-mail-security json"])
         self.assertEqual(result["error"], "DNSBL management requires Exim.")
 
     def test_cached_entries_are_escaped_in_html(self):
@@ -141,6 +147,50 @@ namespace MailSecurityTest {
         self.assertNotIn("<script>", result["html"])
         self.assertIn("&lt;script&gt;", result["html"])
         self.assertNotIn("# comment", result["html"])
+
+    def test_notification_destination_is_saved_using_quoted_cli_argument(self):
+        result = self.request(post={"token": "valid-token", "action": "notifications",
+                                    "notification_email": "ops+server@example.org"})
+        self.assertEqual(result["commands"], ["hestia v-change-sys-mail-security notifications 'ops+server@example.org'"])
+        self.assertEqual(result["headers"], ["Location: /list/mail/security/"])
+
+    def test_invalid_notification_parameters_never_mutate(self):
+        for email in (["ops@example.org"], "ops@example.org\nX: injected", "$(id)@example.org", ""):
+            result = self.request(post={"token": "valid-token", "action": "notifications",
+                                        "notification_email": email})
+            self.assertFalse(any('v-change-' in cmd for cmd in result["commands"]))
+            self.assertEqual(result["error"], "Invalid notification email or unsupported mail service.")
+
+    def test_new_actions_require_csrf_and_write_access(self):
+        for action in ("notifications", "validity-disable"):
+            post = {"token": "wrong", "action": action, "notification_email": "ops@example.org"}
+            self.assertEqual(self.request(post=post)["commands"], [])
+            post["token"] = "valid-token"
+            result = self.request(post=post, readonly=True)
+            self.assertFalse(any('v-change-' in cmd for cmd in result["commands"]))
+            self.assertNotIn('<form', result["html"])
+
+    def test_validity_correction_has_a_separate_action(self):
+        result = self.request(post={"token": "valid-token", "action": "validity-disable"})
+        self.assertEqual(result["commands"], ["hestia v-change-sys-mail-security validity-disable"])
+
+    def test_custom_settings_are_readonly_and_cached_recipient_is_escaped(self):
+        result = self.request(settings={"notifications": {"state": "unsupported", "recipient": ""}, "validity": "custom"})
+        self.assertNotIn('name="notification_email"', result["html"])
+        self.assertNotIn('name="action" value="validity-disable"', result["html"])
+        result = self.request(settings={"notifications": {"state": "configured", "recipient": '<script>alert("x")</script>'}, "validity": "disabled"})
+        self.assertNotIn('<script>', result["html"])
+        self.assertIn('&lt;script&gt;', result["html"])
+
+    def test_missing_validity_file_has_apply_button(self):
+        result = self.request(settings={"notifications": {"state": "missing", "recipient": ""}, "validity": "missing"})
+        self.assertIn('name="action" value="validity-disable"', result["html"])
+
+    def test_malformed_settings_do_not_show_mutation_forms(self):
+        result = self.request(settings={"notifications": [], "validity": "disabled"})
+        self.assertNotIn('name="notification_email"', result["html"])
+        self.assertNotIn('name="action" value="validity-disable"', result["html"])
+        self.assertEqual(result["error"], "Unable to read mail security settings.")
 
 
 class DnsblCommandTests(unittest.TestCase):
