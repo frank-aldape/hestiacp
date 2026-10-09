@@ -1,0 +1,7 @@
+hestia_system_notifications:
+  driver = redirect
+  domains = $primary_hostname
+  local_parts = root : postmaster : mailer-daemon
+  data = @NOTIFICATION_EMAIL@
+  forbid_file
+  forbid_pipe

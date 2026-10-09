@@ -1,0 +1,8 @@
+# Disable Validity rules affected by DNS query-limit responses.
+# Matches current Apache SpamAssassin default scores (upstream bug 8278).
+score RCVD_IN_VALIDITY_CERTIFIED 0
+score RCVD_IN_VALIDITY_SAFE 0
+score RCVD_IN_VALIDITY_RPBL 0
+score RCVD_IN_VALIDITY_CERTIFIED_BLOCKED 0
+score RCVD_IN_VALIDITY_SAFE_BLOCKED 0
+score RCVD_IN_VALIDITY_RPBL_BLOCKED 0
