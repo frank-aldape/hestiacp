@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# set -e
+# Package payloads must remain readable regardless of the caller's umask.
+# A caller-created private build directory retains its existing permissions.
+umask 022
+
 # Autocompile Script for HestiaCP package Files.
 # For building from local source folder use "~localsrc" keyword as hesia branch name,
 #   and the script will not try to download the arhive from github, since '~' char is
@@ -571,6 +574,7 @@ if [ "$NGINX_B" = true ]; then
 	chown -R root:root $BUILD_DIR_HESTIANGINX
 	# Get Debian package files
 	mkdir -p $BUILD_DIR_HESTIANGINX/DEBIAN
+	chmod 755 "$BUILD_DIR_HESTIANGINX/DEBIAN" || exit 1
 	get_branch_file 'src/deb/nginx/control' "$BUILD_DIR_HESTIANGINX/DEBIAN/control"
 	if [ "$BUILD_ARCH" != "amd64" ]; then
 		sed -i "s/amd64/${BUILD_ARCH}/g" "$BUILD_DIR_HESTIANGINX/DEBIAN/control"
@@ -592,7 +596,7 @@ if [ "$NGINX_B" = true ]; then
 
 	# Build the package
 	echo Building Nginx DEB
-	dpkg-deb -Zxz --build $BUILD_DIR_HESTIANGINX $DEB_DIR
+	dpkg-deb -Zxz --build "$BUILD_DIR_HESTIANGINX" "$DEB_DIR" || exit 1
 
 	rm -r $BUILD_DIR/usr
 
@@ -689,6 +693,7 @@ if [ "$PHP_B" = true ]; then
 	# Get Debian package files
 	[ "$HESTIA_DEBUG" ] && echo DEBUG: mkdir -p $BUILD_DIR_HESTIAPHP/DEBIAN
 	mkdir -p $BUILD_DIR_HESTIAPHP/DEBIAN
+	chmod 755 "$BUILD_DIR_HESTIAPHP/DEBIAN" || exit 1
 	get_branch_file 'src/deb/php/control' "$BUILD_DIR_HESTIAPHP/DEBIAN/control"
 	if [ "$BUILD_ARCH" != "amd64" ]; then
 		sed -i "s/amd64/${BUILD_ARCH}/g" "$BUILD_DIR_HESTIAPHP/DEBIAN/control"
@@ -713,8 +718,8 @@ if [ "$PHP_B" = true ]; then
 
 	# Build the package
 	echo Building PHP DEB
-	[ "$HESTIA_DEBUG" ] && echo DEBUG: dpkg-deb -Zxz --build $BUILD_DIR_HESTIAPHP $DEB_DIR
-	dpkg-deb -Zxz --build $BUILD_DIR_HESTIAPHP $DEB_DIR
+	[ "$HESTIA_DEBUG" ] && echo DEBUG: dpkg-deb -Zxz --build "$BUILD_DIR_HESTIAPHP" "$DEB_DIR"
+	dpkg-deb -Zxz --build "$BUILD_DIR_HESTIAPHP" "$DEB_DIR" || exit 1
 
 	rm -r $BUILD_DIR/usr
 
@@ -755,6 +760,7 @@ if [ "$WEB_TERMINAL_B" = true ]; then
 	# Get Debian package files
 	[ "$HESTIA_DEBUG" ] && echo DEBUG: mkdir -p $BUILD_DIR_HESTIA_TERMINAL/DEBIAN
 	mkdir -p $BUILD_DIR_HESTIA_TERMINAL/DEBIAN
+	chmod 755 "$BUILD_DIR_HESTIA_TERMINAL/DEBIAN" || exit 1
 	get_branch_file 'src/deb/web-terminal/control' "$BUILD_DIR_HESTIA_TERMINAL/DEBIAN/control"
 	if [ "$BUILD_ARCH" != "amd64" ]; then
 		sed -i "s/amd64/${BUILD_ARCH}/g" "$BUILD_DIR_HESTIA_TERMINAL/DEBIAN/control"
@@ -784,8 +790,8 @@ if [ "$WEB_TERMINAL_B" = true ]; then
 
 	# Build the package
 	echo Building Web Terminal DEB
-	[ "$HESTIA_DEBUG" ] && echo DEBUG: dpkg-deb -Zxz --build $BUILD_DIR_HESTIA_TERMINAL $DEB_DIR
-	dpkg-deb -Zxz --build $BUILD_DIR_HESTIA_TERMINAL $DEB_DIR
+	[ "$HESTIA_DEBUG" ] && echo DEBUG: dpkg-deb -Zxz --build "$BUILD_DIR_HESTIA_TERMINAL" "$DEB_DIR"
+	dpkg-deb -Zxz --build "$BUILD_DIR_HESTIA_TERMINAL" "$DEB_DIR" || exit 1
 
 	# clear up the source folder
 	if [ "$KEEPBUILD" != 'true' ]; then
@@ -843,8 +849,8 @@ if [ "$HESTIA_B" = true ]; then
 
 	# Build web and move needed directories
 	cd $BUILD_DIR/hestiacp-$branch_dash
-	npm ci --ignore-scripts
-	npm run build
+	npm ci --ignore-scripts || exit 1
+	npm run build || exit 1
 	for BUILD_ARCH in $arch; do
 		for os in $supported_os; do
 			mkdir -p $BUILD_DIR_HESTIA/usr/local/hestia
@@ -862,6 +868,7 @@ if [ "$HESTIA_B" = true ]; then
 			chown -R root:root $BUILD_DIR_HESTIA
 			# Get Debian package files
 			mkdir -p $BUILD_DIR_HESTIA/DEBIAN
+			chmod 755 "$BUILD_DIR_HESTIA/DEBIAN" || exit 1
 			get_branch_file 'src/deb/hestia/control' "$BUILD_DIR_HESTIA/DEBIAN/control"
 			if [ "$BUILD_ARCH" != "amd64" ]; then
 				sed -i "s/amd64/${BUILD_ARCH}/g" "$BUILD_DIR_HESTIA/DEBIAN/control"
@@ -874,7 +881,7 @@ if [ "$HESTIA_B" = true ]; then
 			chmod +x $BUILD_DIR_HESTIA/DEBIAN/preinst
 
 			echo Building Hestia DEB
-			dpkg-deb -Zxz --build $BUILD_DIR_HESTIA $DEB_DIR
+			dpkg-deb -Zxz --build "$BUILD_DIR_HESTIA" "$DEB_DIR" || exit 1
 
 			# clear up the source folder
 			if [ "$KEEPBUILD" != 'true' ]; then
