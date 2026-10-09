@@ -86,8 +86,13 @@ def validate_condition(run, config, stage):
 
     def check(score, expected, account='mailbox'):
         test = expression.replace('$acl_m2', str(score)).replace('{mailbox}', '{' + account + '}')
-        if run(prefix + [test]).strip() != expected:
-            raise ValueError('Exim forwarding protection expansion check failed')
+        case = 'score=' + repr(score) + ', mailbox=' + account + ', expected=' + expected
+        try:
+            result = run(prefix + [test]).strip()
+        except ValueError as error:
+            raise ValueError('Exim forwarding protection check failed (' + case + '): ' + str(error)) from error
+        if result != expected:
+            raise ValueError('Exim forwarding protection expansion check failed (' + case + ')')
 
     for score in ('', threshold - 1, threshold):
         check(score, 'no')
