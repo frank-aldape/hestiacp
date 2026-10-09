@@ -128,3 +128,26 @@ Test actual authenticated sending and external replies, and inspect the recipien
 Keep the preparation directory outside Git. Before future upgrades, verify that the local router and override remain present. Re-run preparation against the current configuration if reapplication is required; never replace the complete Exim configuration with the repository default, because it may discard site relay/SRS customizations. This change does not install update hooks or promise automatic reapplication.
 
 The source and runtime configuration are tracked separately: `/etc/hestiacp/fork-deployment.json` records the installed Hestia package commit, while each preparation directory records hashes of the prior site files in `manifest.json`.
+
+## Recovery check
+
+`test/mail_backup_restore.sh` restores a saved SQL gzip into a new disposable Linux container, without published ports, application networks or production volumes. It limits each container to half a CPU and 1 GiB (PostgreSQL) or 512 MiB (MariaDB), runs the two checks separately, and removes only its own test container and anonymous volumes. Images and private logs remain available. Allow enough disk space for the restored databases and images; the October 8 PostgreSQL dump expands to about 924 MB of SQL, before database/index/WAL overhead.
+
+The current procedure is specific to the saved PostgreSQL 16.13 and MariaDB 11.4.13 dumps. The PostgreSQL initial role is `rap_admin`, matching the dump's `GRANTED BY` clauses. Only its duplicate `CREATE ROLE rap_admin;` is skipped; its attributes, passwords and role grants are restored. Linux locale `en_US.utf8` must be available. The native macOS trial failed on grantor identity and then on the Linux locale and therefore does not count as a completed restore.
+
+Run as root on a Linux host with Docker after copying the saved dumps into a private directory:
+
+```bash
+bash test/mail_backup_restore.sh postgresql /root/hestia-restore-dumps/postgresql.sql.gz
+bash test/mail_backup_restore.sh mariadb /root/hestia-restore-dumps/mariadb.sql.gz
+```
+
+The script stops on SQL errors, checks the expected databases and inventories their tables. This is a SQL recovery check, not an application startup test, mailbox-file recovery or comparison with current live row counts. Actual Linux restore results must be checked before declaring recovery verified. Logs under `/root/hestia-restore-check-*` may contain SQL details and must remain private and outside Git.
+
+## Dependency audit: October 9, 2026
+
+The original lockfile reproduced 14 npm audit findings: 9 high, 2 moderate and 3 low. Compatible lockfile updates plus explicit development-tool overrides for `smol-toml` and `katex` reduced the audit to 5 high findings, all in the development chain `markdownlint-cli2 → micromatch/globby/fast-glob → braces`. The audit with `--omit=dev` reports zero findings after the changes. This npm classification alone is not a proof of runtime exploitability: the normal panel bundles are produced by `build.js`, and several packages classified as production dependencies belong to the documentation/UI dependency tree.
+
+`source-map-js` was the one original finding remaining with `--omit=dev`; it is updated from 1.2.1 to 1.2.2, the [patched version](https://github.com/advisories/GHSA-68fv-2mgg-jv7q). Other resolved findings include `undici`, `brace-expansion`, `js-yaml`, `markdown-it`, `smol-toml` and `katex`. The overrides are tested with the actual Markdown math renderer and TOML parser, and the full panel JS/CSS build passes. Node packages and scripts were installed only in a temporary verification checkout while evaluating the changes.
+
+`braces` 3.0.3 is still the latest published version at audit time and remains [affected](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). npm proposes a downgrade of `markdownlint-cli2` across its declared version range; this was not applied. Avoid running those development tools on untrusted input and review the upstream patch when available. The dependency correction is source-only until the next package is built and installed; it does not modify the VPS's installed fork5 package.
