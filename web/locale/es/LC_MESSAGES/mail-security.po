@@ -137,3 +137,117 @@ msgstr "Dominios seleccionados, separados por comas"
 
 msgid "Review the Spam folder for false positives and disk usage. Saving validates Exim and reloads it; disabling restores the previous forwarding behavior."
 msgstr "Revisa la carpeta Spam para detectar falsos positivos y controlar el espacio utilizado. Al guardar se valida y recarga Exim; al desactivar se restablece el comportamiento anterior de los reenvíos."
+
+msgid "Webmail performance"
+msgstr "Rendimiento del webmail"
+
+msgid "Invalid monitoring settings."
+msgstr "La configuración de monitoreo no es válida."
+
+msgid "Unable to read webmail monitoring."
+msgstr "No se pudo consultar el monitoreo del webmail."
+
+msgid "Metrics cover the shared www pool, including Roundcube and other applications using it. Samples are collected every minute while monitoring is enabled; seven calendar days are retained."
+msgstr "Las métricas corresponden al pool www compartido, incluido Roundcube y otras aplicaciones que lo utilizan. Se recopila una muestra por minuto mientras el monitoreo está activo y se conservan siete días naturales."
+
+msgid "Monitoring enabled"
+msgstr "Monitoreo activado"
+
+msgid "Monitoring disabled"
+msgstr "Monitoreo desactivado"
+
+msgid "No recent samples. Check the monitoring task."
+msgstr "No hay muestras recientes. Revisa la tarea de monitoreo."
+
+msgid "Recent sample available."
+msgstr "Hay una muestra reciente disponible."
+
+msgid "Last sample"
+msgstr "Última muestra"
+
+msgid "Metrics unavailable"
+msgstr "Métricas no disponibles"
+
+msgid "Metric"
+msgstr "Métrica"
+
+msgid "Value"
+msgstr "Valor"
+
+msgid "Active workers"
+msgstr "Trabajadores activos"
+
+msgid "Total workers"
+msgstr "Trabajadores totales"
+
+msgid "Waiting requests"
+msgstr "Solicitudes en espera"
+
+msgid "Peak waiting requests"
+msgstr "Máximo de solicitudes en espera"
+
+msgid "Peak active workers"
+msgstr "Máximo de trabajadores activos"
+
+msgid "Worker limit reached"
+msgstr "Veces que se alcanzó el límite de trabajadores"
+
+msgid "Accepted connections"
+msgstr "Conexiones aceptadas"
+
+msgid "Counters reset when PHP-FPM reloads or restarts. Worker limit events alone do not prove sustained saturation."
+msgstr "Los contadores se reinician al recargar o reiniciar PHP-FPM. Alcanzar el límite de trabajadores por sí solo no demuestra saturación sostenida."
+
+msgid "The last alert could not be queued. Check Exim."
+msgstr "No se pudo poner en cola la última alerta. Revisa Exim."
+
+msgid "Last alert queued"
+msgstr "Última alerta puesta en cola"
+
+msgid "History period"
+msgstr "Periodo del historial"
+
+msgid "Last hour"
+msgstr "Última hora"
+
+msgid "Last 24 hours"
+msgstr "Últimas 24 horas"
+
+msgid "Last 7 days"
+msgstr "Últimos 7 días"
+
+msgid "History will appear after monitoring collects samples."
+msgstr "El historial aparecerá cuando el monitoreo recopile muestras."
+
+msgid "Monitoring and alerts"
+msgstr "Monitoreo y alertas"
+
+msgid "Enable monitoring and email alerts"
+msgstr "Activar monitoreo y alertas por correo"
+
+msgid "Alert recipient"
+msgstr "Destinatario de alertas"
+
+msgid "Waiting request threshold"
+msgstr "Umbral de solicitudes en espera"
+
+msgid "Consecutive minute samples"
+msgstr "Muestras consecutivas de un minuto"
+
+msgid "Minimum minutes between alerts"
+msgstr "Minutos mínimos entre alertas"
+
+msgid "Alerts require consecutive samples of queue pressure, worker limit increases, service failure or unavailable metrics. They are queued through Exim; queuing does not confirm remote delivery."
+msgstr "Las alertas requieren muestras consecutivas de presión en la cola, aumentos del contador de límite de trabajadores, fallo del servicio o métricas no disponibles. Se ponen en cola mediante Exim; esto no confirma su entrega al destinatario."
+
+msgid "Enable monitoring to begin collecting history."
+msgstr "Activa el monitoreo para comenzar a recopilar el historial."
+
+msgid "PHP-FPM service unavailable"
+msgstr "Servicio PHP-FPM no disponible"
+
+msgid "Unable to query PHP-FPM metrics"
+msgstr "No se pueden consultar las métricas de PHP-FPM"
+
+msgid "Sustained webmail capacity pressure"
+msgstr "Presión sostenida sobre la capacidad del webmail"

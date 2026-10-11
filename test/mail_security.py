@@ -51,7 +51,7 @@ namespace MailSecurityTest {
     function exec($command, &$output, &$status) {
         $GLOBALS["result"]["commands"][] = $command;
         $status = $GLOBALS["fixture"]["failure"] ? 1 : 0;
-        $output = str_contains($command, "v-list-sys-mail-security")
+        $output = str_contains($command, "v-list-sys-mail-security") || str_contains($command, "v-list-sys-webmail-monitor")
             ? [json_encode($GLOBALS["fixture"]["settings"])]
             : (str_contains($command, "v-list-") ? $GLOBALS["fixture"]["hosts"] : []);
         return "";
@@ -61,7 +61,7 @@ namespace MailSecurityTest {
     }
     function render_page($user, $tab, $page) {
         $GLOBALS["result"]["error"] = $_SESSION["error_msg"] ?? null;
-        $GLOBALS["result"]["loaded"] = $GLOBALS["v_dnsbl_loaded"];
+        $GLOBALS["result"]["loaded"] = $GLOBALS["v_dnsbl_loaded"] ?? false;
         extract($GLOBALS);
         ob_start();
         include $fixture["template"];

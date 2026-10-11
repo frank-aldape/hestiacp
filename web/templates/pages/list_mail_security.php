@@ -12,6 +12,7 @@
 	<div class="form-container">
 		<h1 class="u-mb20"><?= tohtml(_("Mail Security")) ?></h1>
 		<?php show_alert_message($_SESSION); ?>
+		<a class="button button-secondary u-mb20" href="/list/mail/performance/"><?= tohtml(_("Webmail performance")) ?></a>
 		<div class="alert alert-info u-mb20" role="alert">
 			<i class="fas fa-circle-info"></i>
 			<div><?= tohtml(_("These settings apply to all mail domains on this server. Domain-specific protection is managed from each mail domain's edit page.")) ?></div>

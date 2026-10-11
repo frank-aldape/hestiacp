@@ -1,0 +1,15 @@
+#!/bin/bash
+# info: configure aggregate webmail monitoring and email alerts
+# options: yes|no EMAIL QUEUE_THRESHOLD CONSECUTIVE_SAMPLES COOLDOWN_MINUTES
+source /etc/hestiacp/hestia.conf
+source "$HESTIA/func/main.sh"
+source_conf "$HESTIA/conf/hestia.conf"
+check_hestia_demo_mode
+if [ "$#" -ne 5 ]; then
+	check_result "$E_INVALID" "invalid webmail monitor arguments"
+fi
+mensaje=$(python3 "$HESTIA/install/common/webmail_monitor.py" configure "$@" 2>&1)
+check_result $? "${mensaje:-failed to configure webmail monitoring}"
+"$BIN/v-log-action" "system" "Info" "Mail" "Webmail monitoring configuration saved."
+check_result $? "monitor saved, but action logging failed"
+log_event "$OK" "$ARGUMENTS"
