@@ -11,6 +11,14 @@ umask 022
 # Compile but dont install -> ./hst_autocompile.sh --hestia --noinstall --keepbuild '~localsrc'
 # Compile and install -> ./hst_autocompile.sh --hestia --install '~localsrc'
 
+# Normalize staged application code only; never operate on the live installation.
+# cp preserves restrictive source modes created by git under umask 077.
+normalize_hestia_payload() {
+	local payload_dir=$1
+	find "$payload_dir" -type d -exec chmod 755 {} + || return 1
+	find "$payload_dir" -type f -exec chmod 644 {} + || return 1
+}
+
 # Clear previous screen output
 clear
 
@@ -856,8 +864,8 @@ if [ "$HESTIA_B" = true ]; then
 			mkdir -p $BUILD_DIR_HESTIA/usr/local/hestia
 			cp -rf bin func install web $BUILD_DIR_HESTIA/usr/local/hestia/
 
-			# Set permissions
-			find $BUILD_DIR_HESTIA/usr/local/hestia/ -type f -exec chmod -x {} \;
+			# Restore readable/traversable code modes even with a restrictive checkout.
+			normalize_hestia_payload "$BUILD_DIR_HESTIA/usr/local/hestia" || exit 1
 
 			# Allow send email via /usr/local/hestia/web/inc/mail-wrapper.php via cli
 			chmod +x $BUILD_DIR_HESTIA/usr/local/hestia/web/inc/mail-wrapper.php
@@ -877,8 +885,8 @@ if [ "$HESTIA_B" = true ]; then
 			get_branch_file 'src/deb/hestia/copyright' "$BUILD_DIR_HESTIA/DEBIAN/copyright"
 			get_branch_file 'src/deb/hestia/preinst' "$BUILD_DIR_HESTIA/DEBIAN/preinst"
 			get_branch_file 'src/deb/hestia/postinst' "$BUILD_DIR_HESTIA/DEBIAN/postinst"
-			chmod +x $BUILD_DIR_HESTIA/DEBIAN/postinst
-			chmod +x $BUILD_DIR_HESTIA/DEBIAN/preinst
+			chmod 644 "$BUILD_DIR_HESTIA/DEBIAN/control" "$BUILD_DIR_HESTIA/DEBIAN/copyright" || exit 1
+			chmod 755 "$BUILD_DIR_HESTIA/DEBIAN/postinst" "$BUILD_DIR_HESTIA/DEBIAN/preinst" || exit 1
 
 			echo Building Hestia DEB
 			dpkg-deb -Zxz --build "$BUILD_DIR_HESTIA" "$DEB_DIR" || exit 1
