@@ -16,7 +16,7 @@ import time
 from webmail_fpm_status import read_status
 
 CRON = '# Hestia webmail monitor (managed)\n* * * * * root /usr/local/hestia/bin/v-update-sys-webmail-monitor 2>&1 | /usr/bin/logger -t hestia-webmail-monitor\n'
-DEFAULTS = {'enabled': False, 'recipient': 'sistemas@grupoademex.com',
+DEFAULTS = {'enabled': False, 'recipient': '',
             'queue_threshold': 1, 'consecutive': 3, 'cooldown_minutes': 60}
 
 

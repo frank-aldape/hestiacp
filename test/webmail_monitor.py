@@ -28,7 +28,39 @@ class MonitorTests(unittest.TestCase):
         self.monitor = Monitor(self.root, self.path / 'settings.json', self.path / 'cron',
                                probe=lambda: self.metric, active=lambda: True,
                                notify=lambda *args: self.sent.append(args))
-        self.config = {**DEFAULTS, 'enabled': True}
+        self.config = {**DEFAULTS, 'enabled': True, 'recipient': 'ops@example.org'}
+
+    def test_unconfigured_monitor_has_no_recipient_and_cannot_send_alerts(self):
+        self.assertEqual(self.monitor.settings()['recipient'], '')
+        self.monitor.sample(10000)
+        self.assertFalse(self.monitor.config.exists())
+        self.assertFalse(self.monitor.cron.exists())
+        self.assertEqual(self.sent, [])
+        with self.assertRaisesRegex(ValueError, 'Invalid alert recipient'):
+            self.monitor.configure({**DEFAULTS, 'enabled': True})
+
+    def test_existing_site_recipient_is_preserved(self):
+        self.monitor.configure(self.config)
+        self.assertEqual(self.monitor.settings()['recipient'], 'ops@example.org')
+        self.assertNotEqual(self.monitor.settings()['recipient'], DEFAULTS['recipient'])
+
+    def test_two_installations_keep_independent_alert_recipients(self):
+        self.monitor.configure(self.config)
+        other_root = self.path / 'other-state'
+        other_root.mkdir(mode=0o700)
+        other_sent = []
+        other = Monitor(other_root, self.path / 'other-settings.json', self.path / 'other-cron',
+                        probe=lambda: self.metric, active=lambda: True,
+                        notify=lambda *args: other_sent.append(args))
+        other.configure({**self.config, 'recipient': 'other@example.net'})
+        self.metric['listen queue'] = 1
+        for now in (10000, 10060, 10120):
+            self.monitor.sample(now)
+            other.sample(now)
+        self.assertEqual(len(self.sent), 1)
+        self.assertEqual(len(other_sent), 1)
+        self.assertEqual(self.sent[0][0]['recipient'], 'ops@example.org')
+        self.assertEqual(other_sent[0][0]['recipient'], 'other@example.net')
 
     def test_opt_in_creates_managed_cron_and_disabling_preserves_history(self):
         self.assertFalse(self.monitor.settings()['enabled'])
