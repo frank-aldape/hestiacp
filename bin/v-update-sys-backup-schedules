@@ -1,0 +1,8 @@
+#!/bin/bash
+# info: enqueue due user backups
+# options: NONE
+source /etc/hestiacp/hestia.conf
+if [ "$#" -ne 0 ]; then
+	exit 2
+fi
+python3 "$HESTIA/install/common/backup_schedule.py" dispatch

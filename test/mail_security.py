@@ -51,7 +51,7 @@ namespace MailSecurityTest {
     function exec($command, &$output, &$status) {
         $GLOBALS["result"]["commands"][] = $command;
         $status = $GLOBALS["fixture"]["failure"] ? 1 : 0;
-        $output = str_contains($command, "v-list-sys-mail-security") || str_contains($command, "v-list-sys-webmail-monitor")
+        $output = str_contains($command, "v-list-sys-mail-security") || str_contains($command, "v-list-sys-webmail-monitor") || str_contains($command, "v-list-sys-backup-schedules")
             ? [json_encode($GLOBALS["fixture"]["settings"])]
             : (str_contains($command, "v-list-") ? $GLOBALS["fixture"]["hosts"] : []);
         return "";

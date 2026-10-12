@@ -2,6 +2,9 @@
 <div class="toolbar">
 	<div class="toolbar-inner">
 		<div class="toolbar-buttons">
+			<?php if ($_SESSION["userContext"] === "admin" && empty($_SESSION["look"])) { ?>
+				<a class="button button-secondary" href="/list/backup/schedule/"><?= tohtml(_("Backup scheduling")) ?></a>
+			<?php } ?>
 			<?php if ($read_only !== true) { ?>
 				<a href="/schedule/backup/?<?= tohtml(http_build_query(["token" => $_SESSION["token"]])) ?>" class="button button-secondary"><i class="fas fa-circle-plus icon-green"></i><?= tohtml( _("Create Backup")) ?></a>
 				<a href="/list/backup/exclusions/" class="button button-secondary"><i class="fas fa-folder-minus icon-orange"></i><?= tohtml( _("Backup Exclusions")) ?></a>

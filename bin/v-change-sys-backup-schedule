@@ -1,0 +1,14 @@
+#!/bin/bash
+# info: change a user backup frequency without disabling manual backups
+# options: USER manual|daily|weekly|monthly HOUR MINUTE WEEKDAY DAY
+source /etc/hestiacp/hestia.conf
+source "$HESTIA/func/main.sh"
+check_hestia_demo_mode
+if [ "$#" -ne 6 ]; then
+	check_result "$E_INVALID" "invalid backup schedule arguments"
+fi
+mensaje=$(python3 "$HESTIA/install/common/backup_schedule.py" configure "$@" 2>&1)
+check_result $? "${mensaje:-failed to save backup schedule}"
+"$BIN/v-log-action" "system" "Info" "Backup" "Backup schedule saved (User: $1, Frequency: $2)."
+check_result $? "schedule saved, but action logging failed"
+log_event "$OK" "$ARGUMENTS"

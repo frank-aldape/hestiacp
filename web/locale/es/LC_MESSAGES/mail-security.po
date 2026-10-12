@@ -251,3 +251,102 @@ msgstr "No se pueden consultar las métricas de PHP-FPM"
 
 msgid "Sustained webmail capacity pressure"
 msgstr "Presión sostenida sobre la capacidad del webmail"
+
+msgid "Backup scheduling"
+msgstr "Programación de respaldos"
+
+msgid "Invalid backup schedule."
+msgstr "La programación del respaldo no es válida."
+
+msgid "Unable to read backup schedules."
+msgstr "No se pudo consultar la programación de respaldos."
+
+msgid "Choose automatic backup frequency for each Hestia user. Manual backups remain available through Create Backup in the user's context."
+msgstr "Elige la frecuencia de respaldo automático de cada usuario de Hestia. Los respaldos manuales siguen disponibles con Crear respaldo al entrar en el contexto del usuario."
+
+msgid "Manual only"
+msgstr "Solo manuales"
+
+msgid "Daily"
+msgstr "Diaria"
+
+msgid "Weekly"
+msgstr "Semanal"
+
+msgid "Monthly"
+msgstr "Mensual"
+
+msgid "Sunday"
+msgstr "Domingo"
+
+msgid "Monday"
+msgstr "Lunes"
+
+msgid "Tuesday"
+msgstr "Martes"
+
+msgid "Wednesday"
+msgstr "Miércoles"
+
+msgid "Thursday"
+msgstr "Jueves"
+
+msgid "Friday"
+msgstr "Viernes"
+
+msgid "Saturday"
+msgstr "Sábado"
+
+msgid "Queued"
+msgstr "En cola"
+
+msgid "Already scheduled"
+msgstr "Ya programado"
+
+msgid "Failed"
+msgstr "Falló"
+
+msgid "Dispatch attempted"
+msgstr "Encolado intentado"
+
+msgid "Schedule timezone"
+msgstr "Zona horaria de la programación"
+
+msgid "The current backup cron is custom or unsupported. Review it before using this scheduler."
+msgstr "La tarea actual de respaldos está personalizada o no es compatible. Revísala antes de utilizar este planificador."
+
+msgid "The first save replaces the standard global backup task with per-user scheduling. Other users keep the current frequency until you change them."
+msgstr "El primer cambio guardado sustituye la tarea global estándar por la programación por usuario. Los demás usuarios conservan su frecuencia actual hasta que la cambies."
+
+msgid "The backup scheduler task is missing. Save a schedule to restore it."
+msgstr "Falta la tarea del planificador de respaldos. Guarda una programación para restablecerla."
+
+msgid "Configured backup retention"
+msgstr "Cantidad de copias configurada"
+
+msgid "Automatic backups are skipped for suspended users or users with backups disabled in their package."
+msgstr "Se omiten los respaldos automáticos de usuarios suspendidos o con respaldos desactivados en su paquete."
+
+msgid "Last scheduling attempt"
+msgstr "Último intento de programación"
+
+msgid "Frequency"
+msgstr "Frecuencia"
+
+msgid "Hour"
+msgstr "Hora"
+
+msgid "Minute"
+msgstr "Minuto"
+
+msgid "Monthly day (1–28)"
+msgstr "Día mensual (1–28)"
+
+msgid "Weekly day"
+msgstr "Día de la semana"
+
+msgid "Hour and minute apply to automatic schedules. Weekly day and monthly day apply only to their respective frequencies. Existing backups and queued jobs are retained."
+msgstr "La hora y los minutos se utilizan en las programaciones automáticas. El día semanal y el mensual solo se aplican a su frecuencia correspondiente. Se conservan los respaldos existentes y las tareas que ya están en cola."
+
+msgid "Scheduled time: %02d:%02d"
+msgstr "Hora programada: %02d:%02d"
