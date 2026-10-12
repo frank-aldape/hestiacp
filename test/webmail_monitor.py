@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'install/common'))
-from webmail_monitor import Monitor, DEFAULTS, CRON, transition, validate
+from webmail_monitor import Monitor, DEFAULTS, CRON, transition, validate, main
 from webmail_fpm_status import COUNTERS
 
 
@@ -21,6 +21,16 @@ def sample(now, queue=0, epoch=100, limit=0, error=None):
 
 
 class AlertIdentityTests(unittest.TestCase):
+    def test_custom_sender_is_used_in_both_header_and_envelope(self):
+        settings = {**DEFAULTS, 'recipient': 'ops@example.org', 'sender': 'notifications@example.net'}
+        with patch('webmail_monitor.subprocess.run', side_effect=[
+                subprocess.CompletedProcess([], 0, 'primary_hostname = srv.example.org\n', ''),
+                subprocess.CompletedProcess([], 0, b'', b'')]) as run:
+            Monitor.send_alert(settings, sample(10000), 'test')
+        self.assertIn('notifications@example.net', run.call_args.args[0])
+        message = BytesParser(policy=default).parsebytes(run.call_args.kwargs['input'])
+        self.assertEqual(message['From'].addresses[0].addr_spec, 'notifications@example.net')
+        self.assertIn('Servidor: srv.example.org', message.get_content())
     def test_each_installation_uses_its_exim_identity_and_local_recipient(self):
         for hostname, recipient in [('panel.example.org', 'ops@example.org'),
                                     ('srv1.example.net', 'other@example.net')]:
@@ -84,6 +94,41 @@ class MonitorTests(unittest.TestCase):
         self.monitor.configure(self.config)
         self.assertEqual(self.monitor.settings()['recipient'], 'ops@example.org')
         self.assertNotEqual(self.monitor.settings()['recipient'], DEFAULTS['recipient'])
+
+    def test_old_configuration_keeps_default_sender_without_rewriting_file(self):
+        old = {key: value for key, value in self.config.items() if key != 'sender'}
+        raw = json.dumps(old)
+        self.monitor.config.write_text(raw)
+        self.assertEqual(self.monitor.settings()['sender'], '')
+        self.assertEqual(self.monitor.config.read_text(), raw)
+
+    def test_custom_sender_is_persisted_and_can_be_cleared(self):
+        self.monitor.configure({**self.config, 'sender': 'notifications@example.net'})
+        self.assertEqual(self.monitor.settings()['sender'], 'notifications@example.net')
+        self.monitor.configure({**self.config, 'sender': ''})
+        self.assertEqual(self.monitor.settings()['sender'], '')
+
+    def test_invalid_senders_are_rejected_before_configuration_changes(self):
+        for sender in (['ops@example.org'], 'ops@example.org\nBcc:evil@example.net',
+                       'ops@example.net;id', 'invalid', None):
+            with self.assertRaisesRegex(ValueError, 'Invalid alert sender'):
+                self.monitor.configure({**self.config, 'sender': sender})
+        self.assertFalse(self.monitor.config.exists())
+        self.assertFalse(self.monitor.cron.exists())
+
+    def test_old_cli_preserves_sender_and_explicit_blank_resets_it(self):
+        self.monitor.configure({**self.config, 'sender': 'notifications@example.net'})
+        args = ['webmail_monitor.py', 'configure', 'yes', 'ops@example.org', '1', '3', '60']
+        with patch('webmail_monitor.os.geteuid', return_value=0), \
+             patch('webmail_monitor.Monitor', return_value=self.monitor), \
+             patch.object(sys, 'argv', args):
+            main()
+        self.assertEqual(self.monitor.settings()['sender'], 'notifications@example.net')
+        with patch('webmail_monitor.os.geteuid', return_value=0), \
+             patch('webmail_monitor.Monitor', return_value=self.monitor), \
+             patch.object(sys, 'argv', args + ['']):
+            main()
+        self.assertEqual(self.monitor.settings()['sender'], '')
 
     def test_two_installations_keep_independent_alert_recipients(self):
         self.monitor.configure(self.config)

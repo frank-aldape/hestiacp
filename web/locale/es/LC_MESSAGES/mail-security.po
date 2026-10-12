@@ -362,3 +362,9 @@ msgstr "Elige un usuario"
 
 msgid "Configure"
 msgstr "Configurar"
+
+msgid "Alert sender"
+msgstr "Remitente de las alertas"
+
+msgid "Use a sender domain with SPF and DKIM configured. Leave blank to use root at the server mail hostname."
+msgstr "Utiliza un dominio remitente con SPF y DKIM configurados. Deja el campo vacío para usar root con el nombre de correo del servidor."

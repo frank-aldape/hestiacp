@@ -15,7 +15,7 @@ import time
 from webmail_fpm_status import read_status
 
 CRON = '# Hestia webmail monitor (managed)\n* * * * * root /usr/local/hestia/bin/v-update-sys-webmail-monitor 2>&1 | /usr/bin/logger -t hestia-webmail-monitor\n'
-DEFAULTS = {'enabled': False, 'recipient': '',
+DEFAULTS = {'enabled': False, 'recipient': '', 'sender': '',
             'queue_threshold': 1, 'consecutive': 3, 'cooldown_minutes': 60}
 
 
@@ -39,11 +39,15 @@ def validate(settings):
     if not isinstance(email, str) or len(email) > 254 or not re.fullmatch(
             r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+', email):
         raise ValueError('Invalid alert recipient')
+    sender = settings.get('sender', '')
+    if not isinstance(sender, str) or len(sender) > 254 or (sender and not re.fullmatch(
+            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+', sender)):
+        raise ValueError('Invalid alert sender')
     for key, limits in [('queue_threshold', (1, 10000)), ('consecutive', (2, 30)),
                         ('cooldown_minutes', (5, 1440))]:
         if type(settings.get(key)) is not int or not limits[0] <= settings[key] <= limits[1]:
             raise ValueError('Invalid alert setting: ' + key)
-    return {key: settings[key] for key in DEFAULTS}
+    return {key: settings.get(key, value) for key, value in DEFAULTS.items()}
 
 
 def transition(previous, sample, settings):
@@ -91,7 +95,7 @@ class Monitor:
         if identity.returncode or len(hostname) > 253 or not re.fullmatch(
                 label + r'(?:\.' + label + r')+', hostname):
             raise ValueError('Cannot determine the configured Exim mail hostname')
-        sender = 'root@' + hostname
+        sender = validate(settings)['sender'] or 'root@' + hostname
         message = EmailMessage()
         message['From'] = 'Monitor Webmail <' + sender + '>'
         message['To'] = settings['recipient']
@@ -208,8 +212,9 @@ def main():
             print(json.dumps(monitor.read(int(sys.argv[2]) if len(sys.argv) == 3 else 24)))
         elif action == 'sample' and len(sys.argv) == 2:
             monitor.sample()
-        elif action == 'configure' and len(sys.argv) == 7 and sys.argv[2] in ('yes', 'no'):
+        elif action == 'configure' and len(sys.argv) in (7, 8) and sys.argv[2] in ('yes', 'no'):
             monitor.configure({'enabled': sys.argv[2] == 'yes', 'recipient': sys.argv[3],
+                               'sender': sys.argv[7] if len(sys.argv) == 8 else monitor.settings()['sender'],
                                'queue_threshold': int(sys.argv[4]), 'consecutive': int(sys.argv[5]),
                                'cooldown_minutes': int(sys.argv[6])})
         else:

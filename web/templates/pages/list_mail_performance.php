@@ -51,6 +51,9 @@
 <label class="form-label"><input type="checkbox" name="enabled" value="yes" <?= $config["enabled"] ? "checked" : "" ?>> <?= tohtml(_("Enable monitoring and email alerts")) ?></label>
 <label for="monitor-recipient" class="form-label"><?= tohtml(_("Alert recipient")) ?></label>
 <input id="monitor-recipient" class="form-control u-mb10" type="email" name="recipient" required value="<?= tohtml($config["recipient"]) ?>">
+<label for="monitor-sender" class="form-label"><?= tohtml(_("Alert sender")) ?></label>
+<input id="monitor-sender" class="form-control u-mb10" type="email" name="sender" value="<?= tohtml($config["sender"] ?? "") ?>">
+<p class="u-mb10"><?= tohtml(_("Use a sender domain with SPF and DKIM configured. Leave blank to use root at the server mail hostname.")) ?></p>
 <?php foreach (["queue_threshold" => [_('Waiting request threshold'), 1, 10000], "consecutive" => [_('Consecutive minute samples'), 2, 30], "cooldown_minutes" => [_('Minimum minutes between alerts'), 5, 1440]] as $key => $field) { ?>
 <label for="monitor-<?= tohtml($key) ?>" class="form-label"><?= tohtml($field[0]) ?></label>
 <input id="monitor-<?= tohtml($key) ?>" class="form-control u-mb10" name="<?= tohtml($key) ?>" type="number" required min="<?= $field[1] ?>" max="<?= $field[2] ?>" value="<?= tohtml((string)$config[$key]) ?>">

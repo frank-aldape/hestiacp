@@ -208,6 +208,14 @@ Alerts read Exim's configured `primary_hostname` and use `root@HOSTNAME` consist
 
 Read stored data with `v-list-sys-webmail-monitor 24`; run one collector cycle with `v-update-sys-webmail-monitor`; check collection errors with `journalctl -t hestia-webmail-monitor`. The local Python tests stub probes/services/mail, and PHP route tests intercept privileged commands. Live collection, graph loading and actual alert delivery remain VPS verification steps.
 
+### Site-specific alert sender
+
+The monitoring form accepts an optional **Alert sender** stored as `sender` in the local monitor JSON. This sets both the From header and SMTP envelope sender; the server identity in the message body still comes from Exim. Empty values retain `root@primary_hostname`. Older configuration files are read with an empty sender without rewriting them, so existing installations retain their current behavior. This setting applies to monitor alerts, not the system-address forwarding router or customer messages.
+
+The CLI accepts `v-change-sys-webmail-monitor yes EMAIL QUEUE_THRESHOLD CONSECUTIVE_SAMPLES COOLDOWN_MINUTES [SENDER]`. Omitting the sixth argument preserves an existing sender; an explicitly empty sixth argument resets it to the default. The web form validates and quotes the optional argument, and old forms that omit it preserve the setting. No sender or recipient specific to an installation is stored in source code.
+
+Configure SPF/DKIM and a suitable DMARC policy for the chosen sender domain, then verify a received message's authentication results. Hestia's existing DKIM signing can be used for a hosted MAIL domain; a WEB entry alone does not enable signing. Creating a mailbox for replies and delivery failures is recommended. Changing the sender does not automatically add domains, create keys, publish DNS records or guarantee inbox placement. Apply the new Python helper, CLI wrapper and web page together, or install a package containing them, before saving this option.
+
 ## Restrictive checkout permissions
 
 A source update performed under `umask 077` can produce modified files with mode 0600 and new directories with mode 0700. The build's own `umask 022` does not repair them: recursive copying preserves existing source modes. This caused installed Security/Performance templates to be unreadable by `hestiaweb`, and the performance controller to return permission-denied errors. The package builder now normalizes only staged application directories to 0755 and regular code files to 0644 before restoring the required executable bits. It does not traverse symlinks or change the live installation, the source checkout, runtime secrets or customer data. Debian control metadata and maintainer scripts also get explicit modes. `test/build_payload_permissions.py` reproduces the restrictive source modes and verifies that the staged page is readable while source modes and a linked private target remain unchanged.

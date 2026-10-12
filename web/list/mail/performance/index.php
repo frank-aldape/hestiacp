@@ -13,6 +13,7 @@ if (!is_string($period) || !in_array($period, ["1", "24", "168"], true)) {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 	verify_csrf($_POST);
 	$email = $_POST["recipient"] ?? "";
+	$sender = $_POST["sender"] ?? null;
 	$numbers = [];
 	foreach (
 		["queue_threshold" => [1, 10000], "consecutive" => [2, 30], "cooldown_minutes" => [5, 1440]]
@@ -31,6 +32,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 	} elseif (
 		!is_string($email) ||
 		!filter_var($email, FILTER_VALIDATE_EMAIL) ||
+		($sender !== null &&
+			(!is_string($sender) ||
+				strlen($sender) > 254 ||
+				($sender !== "" && !filter_var($sender, FILTER_VALIDATE_EMAIL)))) ||
 		!is_string($enabled) ||
 		!in_array($enabled, ["yes", "no"], true) ||
 		in_array(false, $numbers, true)
@@ -38,6 +43,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		$_SESSION["error_msg"] = _("Invalid monitoring settings.");
 	} else {
 		$args = array_merge([$enabled, $email], array_values($numbers));
+		if ($sender !== null) {
+			$args[] = $sender;
+		}
 		exec(
 			HESTIA_CMD .
 				"v-change-sys-webmail-monitor " .

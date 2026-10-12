@@ -46,6 +46,20 @@ class MonitorWebTests(unittest.TestCase):
             result = self.request(post=self.post(**update))
             self.assertFalse(any('v-change' in cmd for cmd in result['commands']))
 
+    def test_custom_sender_is_quoted_and_blank_resets_to_default(self):
+        for sender in ('notifications@example.net', ''):
+            result = self.request(post=self.post(sender=sender))
+            self.assertEqual(result['commands'], [
+                "hestia v-change-sys-webmail-monitor 'yes' 'sistemas@grupoademex.com' '1' '3' '60' '" + sender + "'"])
+
+    def test_invalid_sender_never_reaches_configuration_command(self):
+        for sender in (['ops@example.org'], 'x@a.org\nBcc:x@b.org', 'x;id'):
+            result = self.request(post=self.post(sender=sender))
+            self.assertFalse(any('v-change' in cmd for cmd in result['commands']))
+
+    def test_sender_form_handles_old_configuration_without_sender(self):
+        self.assertIn('name="sender"', self.request()['html'])
+
     def test_empty_and_failed_history_reads_do_not_claim_healthy(self):
         self.assertIn('Enable monitoring to begin collecting history.', self.request()['html'])
         result = self.request(failure=True)
