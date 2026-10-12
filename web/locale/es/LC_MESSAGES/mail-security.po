@@ -350,3 +350,15 @@ msgstr "La hora y los minutos se utilizan en las programaciones automáticas. El
 
 msgid "Scheduled time: %02d:%02d"
 msgstr "Hora programada: %02d:%02d"
+
+msgid "Backup user not found."
+msgstr "No se encontró el usuario de respaldos."
+
+msgid "Select a user to configure backups"
+msgstr "Selecciona un usuario para configurar sus respaldos"
+
+msgid "Choose a user"
+msgstr "Elige un usuario"
+
+msgid "Configure"
+msgstr "Configurar"

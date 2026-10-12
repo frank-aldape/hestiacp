@@ -16,12 +16,12 @@ TEMPLATE = ROOT / "web/templates/pages/list_mail_security.php"
 
 class MailSecurityTests(unittest.TestCase):
     def request(self, post=None, role="admin", readonly=False, look="", service="exim4",
-                hosts=None, failure=False, settings=None):
+                hosts=None, failure=False, settings=None, query=None):
         source = CONTROLLER.read_text().removeprefix("<?php")
         source = source.replace('include $_SERVER["DOCUMENT_ROOT"] . "/inc/main.php";', "")
         source = source.replace("exit();", "throw new \\MailSecurityRouteExit();")
         fixture = {
-            "post": post or {}, "role": role, "readonly": readonly, "look": look,
+            "post": post or {}, "query": query or {}, "role": role, "readonly": readonly, "look": look,
             "service": service, "hosts": hosts if hosts is not None else ["dnsbl.example.net"],
             "failure": failure, "template": str(TEMPLATE),
             "settings": settings if settings is not None else {
@@ -74,6 +74,7 @@ namespace MailSecurityTest {
         "ANTIVIRUS_SYSTEM" => "", "token" => "valid-token"];
     $_SERVER["REQUEST_METHOD"] = empty($fixture["post"]) ? "GET" : "POST";
     $_POST = $fixture["post"];
+    $_GET = $fixture["query"];
     $read_only = $fixture["readonly"];
     $user = "admin";
     $result = ["commands" => [], "headers" => [], "csrf" => false];

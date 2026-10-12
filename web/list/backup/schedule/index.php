@@ -6,9 +6,15 @@ if ($_SESSION["userContext"] !== "admin" || !empty($_SESSION["look"])) {
 	header("Location: /list/backup/");
 	exit();
 }
+$selected_backup_user = $_GET["backup_user"] ?? "";
+if (!is_string($selected_backup_user)) {
+	$selected_backup_user = "";
+	$_SESSION["error_msg"] = _("Backup user not found.");
+}
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 	verify_csrf($_POST);
 	$target = $_POST["backup_user"] ?? "";
+	$selected_backup_user = is_string($target) ? $target : "";
 	$frequency = $_POST["frequency"] ?? "";
 	$numbers = [];
 	foreach (
@@ -45,7 +51,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 		unset($output);
 		if (empty($_SESSION["error_msg"])) {
 			$_SESSION["ok_msg"] = _("Changes have been saved.");
-			header("Location: /list/backup/schedule/");
+			header(
+				"Location: /list/backup/schedule/?" . http_build_query(["backup_user" => $target]),
+			);
 			exit();
 		}
 	}
@@ -63,6 +71,18 @@ if ($return_var === 0) {
 		$schedules = $schedule_data;
 	} else {
 		$_SESSION["error_msg"] = _("Unable to read backup schedules.");
+	}
+}
+$backup_account = null;
+if ($schedules !== null && $selected_backup_user !== "") {
+	foreach ($schedules["users"] as $candidate_account) {
+		if ($candidate_account["user"] === $selected_backup_user) {
+			$backup_account = $candidate_account;
+			break;
+		}
+	}
+	if ($backup_account === null) {
+		$_SESSION["error_msg"] = _("Backup user not found.");
 	}
 }
 render_page($user, $TAB, "list_backup_schedule");

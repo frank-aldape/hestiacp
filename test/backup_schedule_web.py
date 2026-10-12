@@ -31,7 +31,7 @@ class ScheduleWebTests(unittest.TestCase):
     def test_readonly_cannot_save_and_has_no_configuration_form(self):
         result = self.request(post=self.post(), readonly=True)
         self.assertFalse(any('v-change' in command for command in result['commands']))
-        self.assertNotIn('<form', result['html'])
+        self.assertNotIn('<form method="post"', result['html'])
 
     def test_csrf_prevents_all_commands(self):
         self.assertEqual(self.request(post=self.post(token='wrong'))['commands'], [])
@@ -39,7 +39,7 @@ class ScheduleWebTests(unittest.TestCase):
     def test_valid_policy_quotes_user_and_every_calendar_argument(self):
         result = self.request(post=self.post())
         self.assertEqual(result['commands'], ["hestia v-change-sys-backup-schedule 'soporte' 'manual' '5' '10' '0' '1'"])
-        self.assertEqual(result['headers'], ['Location: /list/backup/schedule/'])
+        self.assertEqual(result['headers'], ['Location: /list/backup/schedule/?backup_user=soporte'])
 
     def test_invalid_input_never_saves(self):
         for update in ({'backup_user': 'soporte;id'}, {'frequency': ['manual']},
@@ -48,10 +48,29 @@ class ScheduleWebTests(unittest.TestCase):
             self.assertFalse(any('v-change' in command for command in result['commands']))
 
     def test_legacy_warning_and_all_schedule_options_are_visible(self):
-        html = self.request()['html']
+        html = self.request(query={'backup_user': 'soporte'})['html']
         self.assertIn('Other users keep the current frequency', html)
         for value in ('manual', 'daily', 'weekly', 'monthly'):
             self.assertIn('value="' + value + '"', html)
+
+    def test_initial_screen_requires_selection_and_has_no_policy_editor(self):
+        result = self.request()
+        self.assertIn('backup-user-selector', result['html'])
+        self.assertNotIn('<form method="post"', result['html'])
+
+    def test_only_the_selected_user_has_an_editor(self):
+        admin = {**DATA['users'][0], 'user': 'admin', 'policy': {**DATA['users'][0]['policy'], 'frequency': 'manual'}}
+        data = {**DATA, 'users': [admin, DATA['users'][0]]}
+        result = self.request(settings=data, query={'backup_user': 'soporte'})
+        self.assertEqual(result['html'].count('<form method="post"'), 1)
+        self.assertIn('name="backup_user" value="soporte"', result['html'])
+        self.assertNotIn('name="backup_user" value="admin"', result['html'])
+
+    def test_unknown_or_array_selection_cannot_open_another_user_editor(self):
+        for value in ('missing', ['soporte']):
+            result = self.request(query={'backup_user': value})
+            self.assertNotIn('<form method="post"', result['html'])
+            self.assertEqual(result['error'], 'Backup user not found.')
 
     def test_unsupported_legacy_schedule_does_not_offer_a_save_form(self):
         result = self.request(settings={**DATA, 'supported': False})
