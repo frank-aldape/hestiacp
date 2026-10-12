@@ -62,9 +62,28 @@ class ScheduleWebTests(unittest.TestCase):
         admin = {**DATA['users'][0], 'user': 'admin', 'policy': {**DATA['users'][0]['policy'], 'frequency': 'manual'}}
         data = {**DATA, 'users': [admin, DATA['users'][0]]}
         result = self.request(settings=data, query={'backup_user': 'soporte'})
-        self.assertEqual(result['html'].count('<form method="post"'), 1)
+        self.assertEqual(result['html'].count('<form method="post"'), 2)
         self.assertIn('name="backup_user" value="soporte"', result['html'])
         self.assertNotIn('name="backup_user" value="admin"', result['html'])
+
+    def test_retention_changes_only_the_selected_users_native_limit(self):
+        result = self.request(post={'token': 'valid-token', 'backup_user': 'soporte',
+                                    'action': 'retention', 'retention': '1'})
+        self.assertEqual(result['commands'], ["hestia v-change-user-config-value 'soporte' 'BACKUPS' '1'"])
+        self.assertEqual(result['headers'], ['Location: /list/backup/schedule/?backup_user=soporte'])
+
+    def test_retention_rejects_arrays_injection_and_out_of_range_values(self):
+        for value in ('0', '-1', '1000', '1;id', ['1']):
+            result = self.request(post={'token': 'valid-token', 'backup_user': 'soporte',
+                                        'action': 'retention', 'retention': value})
+            self.assertFalse(any('v-change' in command for command in result['commands']))
+
+    def test_retention_respects_csrf_readonly_and_command_failure(self):
+        post = {'token': 'valid-token', 'backup_user': 'soporte', 'action': 'retention', 'retention': '2'}
+        self.assertEqual(self.request(post={**post, 'token': 'wrong'})['commands'], [])
+        self.assertFalse(any('v-change' in command for command in self.request(post=post, readonly=True)['commands']))
+        result = self.request(post=post, failure=True)
+        self.assertEqual(result['headers'], [])
 
     def test_unknown_or_array_selection_cannot_open_another_user_editor(self):
         for value in ('missing', ['soporte']):

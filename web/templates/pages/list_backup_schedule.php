@@ -42,6 +42,15 @@ $policy = $account["policy"];
 <p class="u-mb10"><?= tohtml(_("Last scheduling attempt")) ?>: <?= tohtml($account["last_attempt"]["slot"]) ?> — <?= tohtml($statuses[$account["last_attempt"]["status"]] ?? $account["last_attempt"]["status"]) ?></p>
 <?php } ?>
 <?php if ($read_only !== true) { ?>
+<form method="post" class="u-mb20">
+<input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
+<input type="hidden" name="backup_user" value="<?= tohtml($account["user"]) ?>">
+<input type="hidden" name="action" value="retention">
+<label class="form-label" for="backup-retention"><?= tohtml(_("Maximum saved backups")) ?></label>
+<input class="form-control u-mb10" type="number" required name="retention" id="backup-retention" min="1" max="999" value="<?= tohtml($account["retention"] ?: "1") ?>">
+<p class="u-mb10"><?= tohtml(_("Applies to future backups. Saving does not delete existing archives. Changing the user's package can replace this limit. Temporary backup files require additional space.")) ?></p>
+<button class="button" type="submit"><?= tohtml(_("Save backup limit")) ?></button>
+</form>
 <form method="post" class="u-mb20" x-data="{ frequency: '<?= tohtml($policy["frequency"]) ?>' }">
 <input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
 <input type="hidden" name="backup_user" value="<?= tohtml($account["user"]) ?>">

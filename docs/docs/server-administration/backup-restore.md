@@ -260,3 +260,17 @@ This schedules existing Hestia user backups, not a complete VPS/Docker volume re
 CLI inspection: `v-list-sys-backup-schedules`. To configure a user: `v-change-sys-backup-schedule USER manual|daily|weekly|monthly HOUR MINUTE WEEKDAY DAY`. Root-only dispatcher: `v-update-sys-backup-schedules`. Web access is administrator-only; read-only accounts cannot save, CSRF is required, and user/calendar fields are validated by both controller and privileged helper. The source package must be installed before enabling the dispatcher; source pulls alone do not install its command. Unit tests use temporary users/crontabs and mocked queue commands, while PHP tests intercept privileged operations. Live cron migration and actual queued backup creation require VPS validation.
 
 The scheduling screen first shows a user selector with the current frequency alongside each name. Selecting a user opens only that account's editor at `?backup_user=USERNAME`; successful saves keep the selected account open. Unknown or malformed selections never fall back to another user's editor. Calendar fields appear only for applicable automatic frequencies, with hour/minute on one row. Navigation is read-only and does not alter scheduling policies.
+
+## Per-user archive retention
+
+The administrator's `/list/backup/schedule/` user selector includes **Maximum saved backups** (1–999). It changes the selected user's native `BACKUPS` value through `v-change-user-config-value`; scheduling, other users and hosting limits remain unchanged. Existing archives are not deleted on save. Hestia's existing local backup rotation applies when the next archive is created. Changing the user's hosting package can replace this value. Read-only and impersonated sessions cannot change it; CSRF protection and integer validation apply.
+
+This is the maximum number of saved archives, not a cap on temporary storage. The existing backup workflow stages files and checks free space against twice the user's recorded usage before rotation. A limit of one does not make an undersized destination sufficient.
+
+## Secondary disk for local archives
+
+Keep Hestia's `/backup` path and use a persistent bind mount from a private backup directory on the secondary filesystem. This is a per-server storage operation, not a change to `func/main.sh` or `v-backup-user`. Before migration, require the secondary filesystem to be mounted, inspect active backup processes and the Hestia backup queue, and pause backup submissions during the maintenance window. Copy with numeric ownership, ACLs and extended attributes preserved; verify a checksum dry run before switching. Retain the original directory until the new mount, persistence and Hestia listing are verified. Configure a systemd mount dependency on the secondary filesystem so that `/backup` is not mounted from an unmounted root-filesystem directory during boot.
+
+Do not place the source inside a Hestia user's home: it could be recursively included in that user's backup. A root-owned directory directly under the secondary `/home` filesystem is suitable for the observed installation. Never copy a server's fstab or storage identifiers to another installation.
+
+Mail and backups on the same disk share its failure risk. This local placement supplies recovery from individual file changes; it does not provide an independent copy against disk failure.

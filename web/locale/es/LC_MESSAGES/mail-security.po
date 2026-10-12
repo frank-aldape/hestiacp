@@ -368,3 +368,12 @@ msgstr "Remitente de las alertas"
 
 msgid "Use a sender domain with SPF and DKIM configured. Leave blank to use root at the server mail hostname."
 msgstr "Utiliza un dominio remitente con SPF y DKIM configurados. Deja el campo vacío para usar root con el nombre de correo del servidor."
+
+msgid "Maximum saved backups"
+msgstr "Máximo de respaldos guardados"
+
+msgid "Applies to future backups. Saving does not delete existing archives. Changing the user's package can replace this limit. Temporary backup files require additional space."
+msgstr "Se aplica a los próximos respaldos. Guardar no elimina archivos existentes. Cambiar el paquete del usuario puede reemplazar este límite. Los archivos temporales requieren espacio adicional."
+
+msgid "Save backup limit"
+msgstr "Guardar límite de respaldos"

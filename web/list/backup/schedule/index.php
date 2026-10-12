@@ -16,6 +16,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 	$target = $_POST["backup_user"] ?? "";
 	$selected_backup_user = is_string($target) ? $target : "";
 	$frequency = $_POST["frequency"] ?? "";
+	$action = $_POST["action"] ?? "schedule";
+	$retention_input = $_POST["retention"] ?? null;
+	$retention = is_string($retention_input)
+		? filter_var($retention_input, FILTER_VALIDATE_INT, [
+			"options" => ["min_range" => 1, "max_range" => 999],
+		])
+		: false;
 	$numbers = [];
 	foreach (
 		["hour" => [0, 23], "minute" => [0, 59], "weekday" => [0, 6], "day" => [1, 28]]
@@ -33,16 +40,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 	} elseif (
 		!is_string($target) ||
 		!preg_match("/\A[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}\z/", $target) ||
-		!is_string($frequency) ||
-		!in_array($frequency, ["manual", "daily", "weekly", "monthly"], true) ||
-		in_array(false, $numbers, true)
+		!is_string($action) ||
+		!in_array($action, ["schedule", "retention"], true) ||
+		($action === "retention"
+			? $retention === false
+			: !is_string($frequency) ||
+				!in_array($frequency, ["manual", "daily", "weekly", "monthly"], true) ||
+				in_array(false, $numbers, true))
 	) {
 		$_SESSION["error_msg"] = _("Invalid backup schedule.");
 	} else {
-		$args = array_merge([$target, $frequency], array_values($numbers));
+		$args =
+			$action === "retention"
+				? [$target, "BACKUPS", $retention]
+				: array_merge([$target, $frequency], array_values($numbers));
+		$command =
+			$action === "retention"
+				? "v-change-user-config-value "
+				: "v-change-sys-backup-schedule ";
 		exec(
 			HESTIA_CMD .
-				"v-change-sys-backup-schedule " .
+				$command .
 				implode(" ", array_map(static fn($value) => quoteshellarg((string) $value), $args)),
 			$output,
 			$return_var,
