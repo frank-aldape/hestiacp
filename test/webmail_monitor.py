@@ -1,9 +1,13 @@
 """Exercise persistence, scheduling and alerts without live services or email."""
 import json
+from email.parser import BytesParser
+from email.policy import default
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'install/common'))
 from webmail_monitor import Monitor, DEFAULTS, CRON, transition, validate
@@ -14,6 +18,43 @@ def sample(now, queue=0, epoch=100, limit=0, error=None):
     metrics = {'pool': 'www', 'process manager': 'ondemand', **{key: 0 for key in COUNTERS}}
     metrics.update({'start time': epoch, 'listen queue': queue, 'max children reached': limit})
     return {'time': now, 'metrics': None if error else metrics, 'error': error}
+
+
+class AlertIdentityTests(unittest.TestCase):
+    def test_each_installation_uses_its_exim_identity_and_local_recipient(self):
+        for hostname, recipient in [('panel.example.org', 'ops@example.org'),
+                                    ('srv1.example.net', 'other@example.net')]:
+            responses = [subprocess.CompletedProcess([], 0, 'primary_hostname = ' + hostname + '\n', ''),
+                         subprocess.CompletedProcess([], 0, b'', b'')]
+            with patch('webmail_monitor.subprocess.run', side_effect=responses) as run:
+                Monitor.send_alert({**DEFAULTS, 'recipient': recipient}, sample(10000), 'test')
+            self.assertEqual(run.call_args_list[0].args[0],
+                             ['/usr/sbin/exim4', '-bP', 'primary_hostname'])
+            self.assertEqual(run.call_args.args[0],
+                             ['/usr/sbin/exim4', '-i', '-odq', '-f', 'root@' + hostname, '-t'])
+            message = BytesParser(policy=default).parsebytes(run.call_args.kwargs['input'])
+            self.assertEqual(message['From'].addresses[0].addr_spec, 'root@' + hostname)
+            self.assertEqual(message['To'].addresses[0].addr_spec, recipient)
+            self.assertIn('Servidor: ' + hostname, message.get_content())
+
+    def test_invalid_or_unavailable_exim_identity_never_queues_an_alert(self):
+        for code, output in [(0, 'primary_hostname = ubuntu-8gb-ash-1\n'),
+                             (0, 'primary_hostname = localhost\n'),
+                             (0, 'primary_hostname = bad_name.example.org\n'),
+                             (0, 'primary_hostname = srv.example.org\nBcc: bad@example.net'),
+                             (1, 'primary_hostname = srv.example.org\n')]:
+            with patch('webmail_monitor.subprocess.run', return_value=
+                       subprocess.CompletedProcess([], code, output, '')) as run:
+                with self.assertRaisesRegex(ValueError, 'configured Exim mail hostname'):
+                    Monitor.send_alert({**DEFAULTS, 'recipient': 'ops@example.org'}, sample(10000), 'test')
+                self.assertEqual(run.call_count, 1)
+
+    def test_enqueue_failure_remains_reported(self):
+        with patch('webmail_monitor.subprocess.run', side_effect=[
+                subprocess.CompletedProcess([], 0, 'primary_hostname = srv.example.org\n', ''),
+                subprocess.CompletedProcess([], 1, b'', b'private error')]):
+            with self.assertRaisesRegex(ValueError, 'did not accept'):
+                Monitor.send_alert({**DEFAULTS, 'recipient': 'ops@example.org'}, sample(10000), 'test')
 
 
 class MonitorTests(unittest.TestCase):

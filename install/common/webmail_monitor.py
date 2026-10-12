@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 import re
-import socket
 import subprocess
 import sys
 import tempfile
@@ -84,11 +83,17 @@ class Monitor:
 
     @staticmethod
     def send_alert(settings, sample, reason):
+        identity = subprocess.run(['/usr/sbin/exim4', '-bP', 'primary_hostname'],
+                                  capture_output=True, text=True, timeout=10)
+        match = re.fullmatch(r'primary_hostname = (\S+)', identity.stdout.strip())
+        hostname = match[1].rstrip('.') if match else ''
+        label = r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+        if identity.returncode or len(hostname) > 253 or not re.fullmatch(
+                label + r'(?:\.' + label + r')+', hostname):
+            raise ValueError('Cannot determine the configured Exim mail hostname')
+        sender = 'root@' + hostname
         message = EmailMessage()
-        hostname = socket.getfqdn()
-        if not re.fullmatch(r'[a-zA-Z0-9.-]+', hostname):
-            hostname = 'localhost'
-        message['From'] = 'Monitor Webmail <root@' + hostname + '>'
+        message['From'] = 'Monitor Webmail <' + sender + '>'
         message['To'] = settings['recipient']
         message['Subject'] = '[Hestia] Alerta de webmail: ' + reason
         message.set_content('Servidor: ' + hostname + '\nMotivo: ' + reason +
@@ -96,7 +101,7 @@ class Monitor:
                             '\nMétricas agregadas:\n' + json.dumps(sample, indent=2) +
                             '\nPanel: /list/mail/performance/\n')
         # Queue locally; successful return means accepted by Exim, not delivered remotely.
-        result = subprocess.run(['/usr/sbin/exim4', '-i', '-odq', '-t'],
+        result = subprocess.run(['/usr/sbin/exim4', '-i', '-odq', '-f', sender, '-t'],
                                 input=message.as_bytes(), capture_output=True, timeout=15)
         if result.returncode:
             raise ValueError('Exim did not accept the monitor notification')
