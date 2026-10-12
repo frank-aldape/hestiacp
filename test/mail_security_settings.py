@@ -100,6 +100,16 @@ class SettingsTests(unittest.TestCase):
             'validity': 'disabled', 'forwarding': {'mode': 'off', 'domains': []}})
         self.assertEqual(self.commands, [])
 
+    def test_wrapper_preparation_creates_its_own_include_target(self):
+        stage = self.root / 'preview'
+        stage.mkdir(mode=0o700)
+        candidate = render_router(self.template.read_text(), 'new@example.org').encode()
+        previous = self.active.read_bytes(), self.template.read_bytes()
+        wrapper = self.settings.exim.prepare(candidate, stage)
+        self.assertEqual((stage / 'candidate').read_bytes(), candidate)
+        self.assertIn('.include ' + str(stage / 'candidate'), wrapper.read_text())
+        self.assertEqual(previous, (self.active.read_bytes(), self.template.read_bytes()))
+
     def test_notification_change_preserves_other_configuration_and_permissions(self):
         old = self.template.read_bytes()
         wrapper = self.active.read_bytes()

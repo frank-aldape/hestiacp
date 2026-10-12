@@ -44,6 +44,9 @@ class EximLayout:
         self.mode, self.active = mode, active
         self.metadata = active.stat()
         (stage / 'active-before').write_bytes(self.before[active])
+        # Both callers provide candidate bytes; create the include target here
+        # rather than depending on the caller's temporary filename.
+        (stage / 'candidate').write_bytes(candidate)
         output = stage / 'config-candidate'
         if mode == 'wrapper':
             output.write_text(redirect_include(self.before[active].decode(), self.template,
