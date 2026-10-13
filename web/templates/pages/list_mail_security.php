@@ -102,11 +102,13 @@
 				<p class="u-mb20"><?= tohtml(_("No DNSBL entries are configured.")) ?></p>
 			<?php } else { ?>
 				<ul class="values-list u-mb20">
-					<?php foreach ($v_dnsbl_hosts as $host) { ?>
+					<?php foreach ($v_dnsbl_hosts as $host) {
+						$dnsbl_label = explode("!=", $host, 2)[0];
+					?>
 						<li class="values-list-item">
-							<span class="values-list-label"><?= tohtml($host) ?></span>
+							<span class="values-list-label"><?= tohtml($dnsbl_label) ?></span>
 							<?php if ($read_only !== true) { ?>
-								<form method="post" action="/list/mail/security/" x-data @submit="if (!confirm($el.dataset.confirmMessage)) $event.preventDefault()" data-confirm-message="<?= tohtml(sprintf(_("Remove DNSBL %s for all mail domains?"), $host)) ?>">
+								<form method="post" action="/list/mail/security/" x-data @submit="if (!confirm($el.dataset.confirmMessage)) $event.preventDefault()" data-confirm-message="<?= tohtml(sprintf(_("Remove DNSBL %s for all mail domains?"), $dnsbl_label)) ?>">
 									<input type="hidden" name="token" value="<?= tohtml($_SESSION["token"]) ?>">
 									<input type="hidden" name="action" value="delete">
 									<input type="hidden" name="host" value="<?= tohtml($host) ?>">
