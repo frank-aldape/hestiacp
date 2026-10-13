@@ -155,7 +155,7 @@ class Settings:
             if action == 'forward-spam-policy' and mode != 'off':
                 validate_condition(self.run, stage / 'config-candidate', stage)
             if action == 'spam-scan-limit':
-                validate_scan_limit(self.run, stage / 'config-candidate', stage, recipient)
+                validate_scan_limit(self.run, stage / 'config-candidate', recipient)
             if action == 'notifications':
                 if recipient.lower().rsplit('@', 1)[1] == hostname[1].lower():
                     raise ValueError('Notification destination must not use the server hostname')

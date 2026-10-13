@@ -75,7 +75,7 @@ class SettingsTests(unittest.TestCase):
                 if generated_layout:
                     generated, _, _ = self.generated_layout()
                 before = self.template.read_text()
-                with patch('mail_security_settings.validate_scan_limit') as validate:
+                with patch('mail_security_settings.validate_scan_limit', autospec=True) as validate:
                     self.settings.change('spam-scan-limit', '5')
                     validate.assert_called_once()
                 self.assertEqual(self.template.read_text().replace('{5M}', '{1024K}'), before.replace('{5M}', '{1024K}'))
@@ -89,7 +89,7 @@ class SettingsTests(unittest.TestCase):
         generated, _, _ = self.generated_layout()
         before = self.template.read_bytes(), generated.read_bytes()
         self.fail_reload = 1
-        with patch('mail_security_settings.validate_scan_limit'):
+        with patch('mail_security_settings.validate_scan_limit', autospec=True):
             with self.assertRaisesRegex(ValueError, 'previous configuration restored'):
                 self.settings.change('spam-scan-limit', '5')
         self.assertEqual(before, (self.template.read_bytes(), generated.read_bytes()))
@@ -97,7 +97,7 @@ class SettingsTests(unittest.TestCase):
     def test_failed_scan_boundary_check_never_changes_configuration(self):
         self.prepare_scan()
         before = self.template.read_bytes()
-        with patch('mail_security_settings.validate_scan_limit', side_effect=ValueError('boundary')):
+        with patch('mail_security_settings.validate_scan_limit', autospec=True, side_effect=ValueError('boundary')):
             with self.assertRaisesRegex(ValueError, 'boundary'):
                 self.settings.change('spam-scan-limit', '5')
         self.assertEqual(before, self.template.read_bytes())
