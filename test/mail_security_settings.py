@@ -54,6 +54,55 @@ class SettingsTests(unittest.TestCase):
         self.settings.domains_root = self.root / 'domains'
         (self.settings.domains_root / 'example.org').mkdir(parents=True)
 
+    def prepare_scan(self):
+        self.template.write_text('''acl_check_data:
+ warn !authenticated = *
+      hosts = !+relay_from_hosts
+      condition = ${if < {$message_size}{1024K}}
+      condition = ${if eq{$acl_m1}{yes}{yes}{no}}
+      spam = debian-spamd:true/defer_ok
+      set acl_m2 = $spam_score_int
+ accept
+''' + self.template.read_text())
+
+    def test_scan_limit_preserves_other_settings_in_both_exim_layouts(self):
+        for generated_layout in (False, True):
+            with self.subTest(generated=generated_layout):
+                if not generated_layout:
+                    self.prepare_scan()
+                else:
+                    self.template.write_text(self.template.read_text().replace('{5M}', '{1024K}'))
+                if generated_layout:
+                    generated, _, _ = self.generated_layout()
+                before = self.template.read_text()
+                with patch('mail_security_settings.validate_scan_limit') as validate:
+                    self.settings.change('spam-scan-limit', '5')
+                    validate.assert_called_once()
+                self.assertEqual(self.template.read_text().replace('{5M}', '{1024K}'), before.replace('{5M}', '{1024K}'))
+                if generated_layout:
+                    self.assertIn('{5M}', generated.read_text())
+                    self.assertFalse(self.active.exists())
+                self.settings.change('spam-scan-limit', '5')
+
+    def test_scan_reload_failure_restores_generated_and_template(self):
+        self.prepare_scan()
+        generated, _, _ = self.generated_layout()
+        before = self.template.read_bytes(), generated.read_bytes()
+        self.fail_reload = 1
+        with patch('mail_security_settings.validate_scan_limit'):
+            with self.assertRaisesRegex(ValueError, 'previous configuration restored'):
+                self.settings.change('spam-scan-limit', '5')
+        self.assertEqual(before, (self.template.read_bytes(), generated.read_bytes()))
+
+    def test_failed_scan_boundary_check_never_changes_configuration(self):
+        self.prepare_scan()
+        before = self.template.read_bytes()
+        with patch('mail_security_settings.validate_scan_limit', side_effect=ValueError('boundary')):
+            with self.assertRaisesRegex(ValueError, 'boundary'):
+                self.settings.change('spam-scan-limit', '5')
+        self.assertEqual(before, self.template.read_bytes())
+        self.assertFalse(any(cmd[0] == 'systemctl' for cmd in self.commands))
+
     def test_selected_forwarding_policy_is_transactional_and_reversible(self):
         self.prepare_forwarding()
         previous = self.template.read_bytes()

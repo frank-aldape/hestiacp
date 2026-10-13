@@ -13,6 +13,7 @@ import tempfile
 from mail_security_config import render_router, VALIDITY
 from mail_forwarding_guard import forwarding_state, policy_domains, render_forwarding_guard, validate_condition
 from mail_exim_layout import EximLayout
+from mail_scan_limit import render_scan_limit, validate_scan_limit
 
 
 class Settings:
@@ -119,6 +120,10 @@ class Settings:
             path = self.template
             candidate = render_forwarding_guard(path.read_text(), recipient).encode()
             service = ['systemctl', 'reload', 'exim4']
+        elif action == 'spam-scan-limit':
+            path = self.template
+            candidate = render_scan_limit(path.read_text(), recipient).encode()
+            service = ['systemctl', 'reload', 'exim4']
         else:
             raise ValueError('Unknown mail security action')
         if path.is_symlink():
@@ -136,7 +141,7 @@ class Settings:
         (stage / 'manifest.json').write_text(json.dumps({
             'action': action, 'path': str(path), 'previous_exists': previous is not None,
         }, indent=2) + '\n')
-        exim_change = action in ('notifications', 'forward-spam-policy')
+        exim_change = action in ('notifications', 'forward-spam-policy', 'spam-scan-limit')
         if exim_change:
             self.exim.run = self.run
             self.exim.prepare(candidate, stage)
@@ -149,6 +154,8 @@ class Settings:
                 raise ValueError('Cannot determine the configured server hostname')
             if action == 'forward-spam-policy' and mode != 'off':
                 validate_condition(self.run, stage / 'config-candidate', stage)
+            if action == 'spam-scan-limit':
+                validate_scan_limit(self.run, stage / 'config-candidate', stage, recipient)
             if action == 'notifications':
                 if recipient.lower().rsplit('@', 1)[1] == hostname[1].lower():
                     raise ValueError('Notification destination must not use the server hostname')
@@ -205,6 +212,8 @@ def main():
         elif action == 'validity-disable' and len(sys.argv) == 2:
             settings.change(action)
         elif action == 'forward-spam-policy' and len(sys.argv) == 3:
+            settings.change(action, sys.argv[2])
+        elif action == 'spam-scan-limit' and len(sys.argv) == 3:
             settings.change(action, sys.argv[2])
         else:
             raise ValueError('Invalid mail security arguments')

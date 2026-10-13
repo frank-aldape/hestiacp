@@ -1,6 +1,6 @@
 #!/bin/bash
 # info: change supported global mail security settings
-# options: notifications EMAIL | validity-disable | forward-spam-policy off|all|DOMAINS
+# options: notifications EMAIL | validity-disable | forward-spam-policy off|all|DOMAINS | spam-scan-limit MIB
 source /etc/hestiacp/hestia.conf
 source "$HESTIA/func/main.sh"
 source_conf "$HESTIA/conf/hestia.conf"
@@ -25,6 +25,12 @@ case "$1" in
 		if [ "$#" -ne 2 ] || [[ ! "$2" =~ ^[a-zA-Z0-9.,-]+$ ]] || \
 			[[ ! "$MAIL_SYSTEM" =~ ^exim4?$ ]] || [ "$ANTISPAM_SYSTEM" != spamd ]; then
 			check_result "$E_INVALID" "invalid forwarding policy or unsupported mail service"
+		fi
+		;;
+	spam-scan-limit)
+		if [ "$#" -ne 2 ] || [[ ! "$2" =~ ^[1-9][0-9]?$ ]] || \
+			[[ ! "$MAIL_SYSTEM" =~ ^exim4?$ ]] || [ "$ANTISPAM_SYSTEM" != spamd ]; then
+			check_result "$E_INVALID" "invalid spam scan size or unsupported mail service"
 		fi
 		;;
 	*) check_result "$E_INVALID" "invalid mail security action" ;;
